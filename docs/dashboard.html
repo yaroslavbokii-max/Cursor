@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Дашборд (демо)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3d8bfd;
+      --green: #34d399;
+      --amber: #fbbf24;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    header { margin-bottom: 1.5rem; }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.35rem; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .kpi {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+    }
+    .kpi .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .kpi .value { font-size: 1.5rem; font-weight: 700; margin-top: 0.25rem; }
+    .kpi .delta { font-size: 0.8rem; margin-top: 0.35rem; }
+    .kpi .delta.up { color: var(--green); }
+    .kpi .delta.down { color: #f87171; }
+    .charts {
+      display: grid;
+      gap: 1rem;
+    }
+    @media (min-width: 720px) {
+      .charts { grid-template-columns: 1.4fr 1fr; align-items: stretch; }
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 12px;
+      padding: 1rem 1rem 0.5rem;
+    }
+    .panel h2 { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.75rem; }
+    .chart-box { position: relative; height: 220px; }
+    .chart-box.tall { height: 260px; }
+    footer { margin-top: 1.5rem; font-size: 0.8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Дашборд (демо-дані)</h1>
+      <p class="sub">Приклад для GitHub Pages. Замініть цифри в <code>dashboard.html</code> на свої.</p>
+    </header>
+
+    <section class="kpis" aria-label="Ключові показники">
+      <div class="kpi">
+        <div class="label">Замовлення</div>
+        <div class="value">12 480</div>
+        <div class="delta up">+8.2% vs мин. тиждень</div>
+      </div>
+      <div class="kpi">
+        <div class="label">GMV</div>
+        <div class="value">€284k</div>
+        <div class="delta up">+3.1%</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Конверсія</div>
+        <div class="value">4.6%</div>
+        <div class="delta down">−0.2 п.п.</div>
+      </div>
+      <div class="kpi">
+        <div class="label">NPS</div>
+        <div class="value">42</div>
+        <div class="delta up">+2</div>
+      </div>
+    </section>
+
+    <div class="charts">
+      <div class="panel">
+        <h2>Тижневий тренд (демо)</h2>
+        <div class="chart-box tall">
+          <canvas id="lineChart" aria-label="Лінійний графік"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Структура (демо)</h2>
+        <div class="chart-box">
+          <canvas id="pieChart" aria-label="Кругова діаграма"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Оновлено локально: змініть файл у репозиторії <code>docs/dashboard.html</code> і зробіть commit.
+    </footer>
+  </div>
+
+  <script>
+    Chart.defaults.color = "#8b9cb3";
+    Chart.defaults.borderColor = "rgba(255,255,255,.08)";
+
+    var lineCtx = document.getElementById("lineChart");
+    if (lineCtx) {
+      new Chart(lineCtx, {
+        type: "line",
+        data: {
+          labels: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
+          datasets: [{
+            label: "Замовлення",
+            data: [1620, 1750, 1690, 1820, 2100, 2340, 1980],
+            borderColor: "#3d8bfd",
+            backgroundColor: "rgba(61, 139, 253, 0.15)",
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { beginAtZero: false }
+          }
+        }
+      });
+    }
+
+    var pieCtx = document.getElementById("pieChart");
+    if (pieCtx) {
+      new Chart(pieCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["Food", "Store", "Інше"],
+          datasets: [{
+            data: [62, 28, 10],
+            backgroundColor: ["#3d8bfd", "#34d399", "#a78bfa"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom", labels: { boxWidth: 12, padding: 16 } }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
