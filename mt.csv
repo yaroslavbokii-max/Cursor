@@ -1,5 +1,5 @@
-week,merchant_spend_eur,bolt_spend_eur,cost_share_pct
-2026-03-03,4200,5800,42.00
-2026-03-10,4500,6100,42.45
-2026-03-17,4900,6400,43.36
-2026-03-24,5100,5900,46.36
+week,bolt_spend,provider_spend,city,business_segment
+2026-03-03,5200,2100,Valletta,Food
+2026-03-10,4800,1950,Sliema,Food
+2026-03-17,6100,2400,St Julian's,Store
+2026-03-24,5500,2200,Birkirkara,Food

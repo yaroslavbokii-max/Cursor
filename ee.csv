@@ -1,5 +1,5 @@
-week,merchant_spend_eur,bolt_spend_eur,cost_share_pct
-2026-03-03,15800,21500,42.36
-2026-03-10,16200,21800,42.63
-2026-03-17,17100,22900,42.75
-2026-03-24,18100,22900,44.17
+week,bolt_spend,provider_spend,city,business_segment
+2026-03-03,22000,11000,Tallinn,Food
+2026-03-10,24500,11800,Tartu,Food
+2026-03-17,23800,10500,Tallinn,Store
+2026-03-24,25100,11200,Pärnu,Food

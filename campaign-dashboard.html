@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Campaign dashboard (Databricks → файли)</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <style>
+    :root { --bg:#0f1419; --card:#1a2332; --text:#e7ecf3; --muted:#8b9cb3; --accent:#3d8bfd; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 1.25rem; }
+    h1 { font-size: 1.2rem; margin: 0 0 0.25rem; }
+    .hint { color: var(--muted); font-size: 0.85rem; margin: 0 0 1rem; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+    select, button {
+      background: var(--card); color: var(--text); border: 1px solid rgba(255,255,255,.12);
+      padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem;
+    }
+    button { background: var(--accent); border-color: transparent; cursor: pointer; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .meta { font-size: 0.8rem; color: var(--muted); }
+    .panel { background: var(--card); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,.06); }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 0.5rem; }
+    .kpi { padding: 0.75rem; background: rgba(0,0,0,.2); border-radius: 8px; }
+    .kpi .l { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; }
+    .kpi .v { font-size: 1.1rem; font-weight: 700; }
+    .chart { height: 220px; position: relative; }
+    .err { color: #f87171; font-size: 0.85rem; }
+    code { background: rgba(0,0,0,.35); padding: 0.1em 0.35em; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Інтерактивний дашборд (як у колеги)</h1>
+    <p class="hint">
+      Дані беруться з файлів <code>investment-data/countries.json</code> та <code>investment-data/{код}.csv</code> на GitHub Pages —
+      не напряму з браузера в Databricks. Оновлення: GitHub Action з <code>DATABRICKS_TOKEN</code> перезаписує ці файли.
+    </p>
+
+    <div class="panel">
+      <div class="row">
+        <label for="country-select">Країна</label>
+        <select id="country-select"><option value="">— завантаження… —</option></select>
+        <button type="button" id="go-btn" disabled>Завантажити</button>
+      </div>
+      <p class="meta" id="country-meta"></p>
+      <p class="meta" id="refresh-hint"></p>
+      <p class="err" id="err" hidden></p>
+    </div>
+
+    <div id="app" style="display:none">
+      <div class="panel kpis" id="kpis"></div>
+      <div class="panel">
+        <div class="chart"><canvas id="chartSpend"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var countrySelect = document.getElementById("country-select");
+    var goBtn = document.getElementById("go-btn");
+    var countryMeta = document.getElementById("country-meta");
+    var refreshHint = document.getElementById("refresh-hint");
+    var errEl = document.getElementById("err");
+    var appEl = document.getElementById("app");
+    var _countries = [];
+    var _refresh = "";
+    var chart;
+
+    function showErr(msg) {
+      errEl.textContent = msg;
+      errEl.hidden = !msg;
+    }
+
+    async function loadCountries() {
+      try {
+        var resp = await fetch("investment-data/countries.json", { cache: "no-store" });
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        var data = await resp.json();
+        _countries = data.countries || [];
+        _refresh = data.refreshed || "";
+        countrySelect.innerHTML = '<option value="">— оберіть країну —</option>';
+        _countries.forEach(function (c) {
+          var o = document.createElement("option");
+          o.value = c.code;
+          o.textContent = c.code.toUpperCase() + " — " + c.providers + " providers";
+          countrySelect.appendChild(o);
+        });
+        if (_refresh) refreshHint.textContent = "Дані (файли): " + _refresh;
+      } catch (e) {
+        countrySelect.innerHTML = '<option value="">помилка</option>';
+        showErr("Не знайдено investment-data/countries.json. Завантаж папку investment-data на GitHub поруч із цим HTML.");
+      }
+    }
+
+    countrySelect.addEventListener("change", function () {
+      var code = countrySelect.value;
+      goBtn.disabled = !code;
+      countryMeta.textContent = "";
+      if (!code) return;
+      var info = _countries.find(function (c) { return c.code === code; });
+      if (info) {
+        var t = (info.bolt_spend + info.provider_spend).toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+        countryMeta.textContent = info.providers + " providers · €" + t + " сума (bolt+provider)" +
+          (info.cached ? " · з кешу файлів" : "");
+      }
+    });
+
+    goBtn.addEventListener("click", async function () {
+      var code = countrySelect.value;
+      if (!code) return;
+      showErr("");
+      appEl.style.display = "none";
+      try {
+        var resp = await fetch("investment-data/" + code + ".csv", { cache: "no-store" });
+        if (!resp.ok) throw new Error("Немає файлу " + code + ".csv (HTTP " + resp.status + ")");
+        var csvText = await resp.text();
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function (results) {
+            var rows = results.data.map(function (r) {
+              return {
+                week: r.week,
+                bolt_spend: parseFloat(r.bolt_spend) || 0,
+                provider_spend: parseFloat(r.provider_spend) || 0,
+                city: r.city || "",
+                business_segment: r.business_segment || ""
+              };
+            });
+            render(rows, code.toUpperCase());
+            appEl.style.display = "block";
+          },
+          error: function (e) { showErr("CSV: " + e.message); }
+        });
+      } catch (e) {
+        showErr(e.message || String(e));
+      }
+    });
+
+    function render(rows, label) {
+      var bolt = rows.reduce(function (s, r) { return s + r.bolt_spend; }, 0);
+      var prov = rows.reduce(function (s, r) { return s + r.provider_spend; }, 0);
+      document.getElementById("kpis").innerHTML =
+        '<div class="kpi"><div class="l">Bolt spend</div><div class="v">€' + bolt.toLocaleString("uk-UA", { maximumFractionDigits: 0 }) + "</div></div>" +
+        '<div class="kpi"><div class="l">Provider spend</div><div class="v">€' + prov.toLocaleString("uk-UA", { maximumFractionDigits: 0 }) + "</div></div>" +
+        '<div class="kpi"><div class="l">Рядків</div><div class="v">' + rows.length + "</div></div>";
+
+      var labels = rows.map(function (r) { return r.week; });
+      var ctx = document.getElementById("chartSpend");
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            { label: "Bolt", data: rows.map(function (r) { return r.bolt_spend; }), backgroundColor: "rgba(61,139,253,0.7)" },
+            { label: "Provider", data: rows.map(function (r) { return r.provider_spend; }), backgroundColor: "rgba(52,211,153,0.7)" }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { title: { display: true, text: label + " — тижневий spend (демо)" } },
+          scales: { x: { stacked: false }, y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    loadCountries();
+  </script>
+</body>
+</html>

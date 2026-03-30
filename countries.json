@@ -1,21 +1,19 @@
 {
-  "metric": "ULC activation — cost share",
-  "definition": "Merchant spend / (Merchant + Bolt) × 100%, тільки spend_objective = activation (Bolt ULC). Джерело: ng_public_spark.etl_delivery_campaign_order_metrics.",
-  "refreshed": "2026-03-30 (demo — оновить scripts/export_ulc_activation_pages.py)",
+  "refreshed": "2026-03-30 (demo — замінить GitHub Action після SQL)",
   "countries": [
     {
       "code": "mt",
-      "merchant_eur": 18500,
-      "bolt_eur": 24200,
-      "cost_share_pct": 43.3,
-      "weeks_loaded": 4
+      "providers": 128,
+      "bolt_spend": 42000,
+      "provider_spend": 19000,
+      "cached": true
     },
     {
       "code": "ee",
-      "merchant_eur": 67200,
-      "bolt_eur": 89100,
-      "cost_share_pct": 43.0,
-      "weeks_loaded": 4
+      "providers": 340,
+      "bolt_spend": 156000,
+      "provider_spend": 72000,
+      "cached": true
     }
   ]
 }
