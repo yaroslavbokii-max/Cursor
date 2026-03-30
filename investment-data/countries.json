@@ -1,0 +1,19 @@
+{
+  "refreshed": "2026-03-30 (demo — замінить GitHub Action після SQL)",
+  "countries": [
+    {
+      "code": "mt",
+      "providers": 128,
+      "bolt_spend": 42000,
+      "provider_spend": 19000,
+      "cached": true
+    },
+    {
+      "code": "ee",
+      "providers": 340,
+      "bolt_spend": 156000,
+      "provider_spend": 72000,
+      "cached": true
+    }
+  ]
+}
