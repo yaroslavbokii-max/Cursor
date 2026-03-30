@@ -16,6 +16,7 @@ Or as context manager:
 
 from databricks import sql
 from pathlib import Path
+import os
 import pandas as pd
 
 SERVER_HOSTNAME = "bolt-incentives.cloud.databricks.com"
@@ -23,6 +24,9 @@ HTTP_PATH = "sql/protocolv1/o/2472566184436351/0221-081903-9ag4bh69"
 
 
 def _load_token():
+    token = os.environ.get("DATABRICKS_TOKEN", "").strip().strip('"').strip("'")
+    if token:
+        return token
     env_path = Path(__file__).parent / ".env"
     if not env_path.is_file():
         raise RuntimeError(

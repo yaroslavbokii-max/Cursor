@@ -1,0 +1,21 @@
+{
+  "generated_at": null,
+  "kpi": {
+    "orders": 12480,
+    "gmv_k_eur": 284,
+    "conversion_pct": 4.6,
+    "nps": 42,
+    "orders_delta_pct": 8.2,
+    "gmv_delta_pct": 3.1,
+    "conversion_delta_pp": -0.2,
+    "nps_delta": 2
+  },
+  "line": {
+    "labels": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
+    "values": [1620, 1750, 1690, 1820, 2100, 2340, 1980]
+  },
+  "pie": {
+    "labels": ["Food", "Store", "Інше"],
+    "values": [62, 28, 10]
+  }
+}
