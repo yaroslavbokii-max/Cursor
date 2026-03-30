@@ -1,0 +1,40 @@
+# Оновлює ulc-activation-data/* з Databricks (тижневий cost share для ULC activation).
+# Секрет: DATABRICKS_TOKEN. Список країн — у scripts/export_ulc_activation_pages.py → DEFAULT_COUNTRIES.
+name: Update ULC activation data
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "15 6 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r databricks-dbx/requirements.txt
+
+      - name: Export ULC activation CSV + countries.json
+        env:
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: python scripts/export_ulc_activation_pages.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ulc-activation-data/
+          if git diff --staged --quiet; then
+            echo "No changes under ulc-activation-data/"
+            exit 0
+          fi
+          git commit -m "chore: refresh ULC activation cost-share data from Databricks"
+          git push
