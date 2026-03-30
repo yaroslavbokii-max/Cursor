@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Сторінка перезавантажується кожні 60 с — зручно, коли ви оновили звіт і зробили push -->
+  <meta http-equiv="refresh" content="60" />
+  <title>Звіт для партнерів</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e7ecf3;
+      --muted: #8b9cb3;
+      --accent: #3d8bfd;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .wrap { max-width: 42rem; margin: 0 auto; padding: 2rem 1.25rem; }
+    h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 0.5rem; }
+    .meta {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      border: 1px solid rgba(255,255,255,.06);
+    }
+    .card h2 { font-size: 1rem; margin: 0 0 0.75rem; color: var(--accent); }
+    .card p { margin: 0 0 0.75rem; }
+    .card p:last-child { margin-bottom: 0; }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    code { background: rgba(0,0,0,.35); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Звіт для партнерів</h1>
+    <p class="meta">
+      Час на вашому пристрої: <strong id="now">…</strong><br />
+      Сторінка автооновлюється кожні 60 секунд.
+    </p>
+
+    <div class="card">
+      <h2>Що тут змінювати</h2>
+      <p>Замініть цей блок на свій текст, таблицю або посилання. Файл у проєкті: <code>docs/index.html</code>.</p>
+      <p>Після збереження зробіть commit і push на GitHub — партнер побачить оновлення (після автооновлення або F5).</p>
+    </div>
+
+    <footer>
+      Публічне посилання після увімкнення GitHub Pages буде виду<br />
+      <code>https://yaroslavbokii-max.github.io/Cursor/</code>
+    </footer>
+  </div>
+  <script>
+    function tick() {
+      var el = document.getElementById("now");
+      if (el) el.textContent = new Date().toLocaleString("uk-UA");
+    }
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
