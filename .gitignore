@@ -1,0 +1,9 @@
+# Secrets — never commit
+**/.env
+**/.env.*
+!**/.env.example
+
+.DS_Store
+__pycache__/
+*.pyc
+node_modules/

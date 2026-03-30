@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{TITLE}} — Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        /* ========== CSS VARIABLES (BRAND: BOLT) ========== */
+        :root {
+            --primary: #34D399;
+            --primary-dark: #059669;
+            --bg-white: #FFFFFF;
+            --bg-light: #F9FAFB;
+            --text-dark: #1F2937;
+            --text-medium: #6B7280;
+            --text-light: #9CA3AF;
+            --border: #E5E7EB;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+        }
+
+        /* ========== BASE STYLES ========== */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.5;
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* ========== HEADER ========== */
+        .header {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header-meta {
+            display: flex;
+            gap: 24px;
+            color: var(--text-medium);
+            font-size: 14px;
+        }
+
+        .header-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* ========== HYPOTHESIS SECTION ========== */
+        .hypothesis-section {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .hypothesis-section h2 {
+            font-size: 16px;
+            color: var(--text-medium);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hypothesis-card {
+            background: #F0FDF4;
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .hypothesis-card .verdict {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .verdict.confirmed { background: var(--success); color: white; }
+        .verdict.rejected { background: var(--error); color: white; }
+        .verdict.partial { background: var(--warning); color: white; }
+
+        /* ========== INSIGHTS BOX ========== */
+        .insights-box {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .insights-box h2 {
+            font-size: 16px;
+            color: var(--text-medium);
+            margin-bottom: 16px;
+        }
+
+        .insight-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .insight-item:last-child { border-bottom: none; }
+
+        .insight-number {
+            background: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .insight-content strong { color: var(--text-dark); }
+        .insight-action {
+            color: var(--primary-dark);
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        /* ========== KPI GRID ========== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: var(--text-medium);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .kpi-change {
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .kpi-change.positive { color: var(--success); }
+        .kpi-change.negative { color: var(--error); }
+
+        /* ========== CHART SECTIONS ========== */
+        .chart-section {
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chart-section h2 {
+            font-size: 16px;
+            color: var(--text-medium);
+            margin-bottom: 8px;
+        }
+
+        .chart-section .insight-subtitle {
+            font-size: 14px;
+            color: var(--text-dark);
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .chart-container {
+            height: 350px;
+        }
+
+        /* ========== VALIDATION PANEL ========== */
+        .validation-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-white);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            width: 320px;
+            z-index: 1000;
+            font-size: 13px;
+        }
+
+        .validation-panel h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .validation-panel.passed h3 { color: var(--success); }
+        .validation-panel.failed h3 { color: var(--error); }
+        .validation-panel.warning h3 { color: var(--warning); }
+
+        .validation-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+
+        .validation-item.pass { color: var(--success); }
+        .validation-item.fail { color: var(--error); }
+
+        .validation-score {
+            text-align: center;
+            padding: 12px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .validation-score .score {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .close-validation {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--text-medium);
+        }
+
+        /* ========== PRINT STYLES ========== */
+        @media print {
+            @page { size: landscape; margin: 0; }
+            
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .dashboard { padding: 15mm; }
+            .validation-panel { display: none; }
+            .chart-section { page-break-inside: avoid; }
+        }
+
+        /* ========== PRINT BUTTON ========== */
+        .print-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(52, 211, 153, 0.3);
+            z-index: 1000;
+        }
+
+        .print-btn:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- ========== HEADER ========== -->
+        <div class="header">
+            <h1>{{TITLE}}</h1>
+            <div class="header-meta">
+                <span>📅 Period: {{PERIOD}}</span>
+                <span>📊 Baseline: {{BASELINE}}</span>
+                <span>👤 Audience: {{AUDIENCE}}</span>
+            </div>
+        </div>
+
+        <!-- ========== HYPOTHESIS ========== -->
+        <div class="hypothesis-section">
+            <h2>🎯 Hypothesis Testing</h2>
+            <div class="hypothesis-card">
+                <span class="verdict {{VERDICT_CLASS}}">{{VERDICT}}</span>
+                <p><strong>H0:</strong> {{HYPOTHESIS}}</p>
+                <p style="margin-top: 8px; color: var(--text-medium);">{{HYPOTHESIS_DETAIL}}</p>
+            </div>
+        </div>
+
+        <!-- ========== TOP INSIGHTS ========== -->
+        <div class="insights-box">
+            <h2>💡 Top 3 Insights & Actions</h2>
+            <div class="insight-item">
+                <span class="insight-number">1</span>
+                <div class="insight-content">
+                    <strong>{{INSIGHT_1}}</strong>
+                    <div class="insight-action">→ {{ACTION_1}}</div>
+                </div>
+            </div>
+            <div class="insight-item">
+                <span class="insight-number">2</span>
+                <div class="insight-content">
+                    <strong>{{INSIGHT_2}}</strong>
+                    <div class="insight-action">→ {{ACTION_2}}</div>
+                </div>
+            </div>
+            <div class="insight-item">
+                <span class="insight-number">3</span>
+                <div class="insight-content">
+                    <strong>{{INSIGHT_3}}</strong>
+                    <div class="insight-action">→ {{ACTION_3}}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== KPI CARDS ========== -->
+        <div class="kpi-grid">
+            <!-- KPIs will be inserted here -->
+        </div>
+
+        <!-- ========== CHARTS ========== -->
+        <div class="chart-section">
+            <h2>📈 Primary Analysis</h2>
+            <p class="insight-subtitle">{{CHART_1_INSIGHT}}</p>
+            <div id="chart-1" class="chart-container"></div>
+        </div>
+
+        <div class="chart-section">
+            <h2>📊 Breakdown Analysis</h2>
+            <p class="insight-subtitle">{{CHART_2_INSIGHT}}</p>
+            <div id="chart-2" class="chart-container"></div>
+        </div>
+    </div>
+
+    <!-- ========== VALIDATION PANEL ========== -->
+    <div id="validationPanel" class="validation-panel">
+        <button class="close-validation" onclick="this.parentElement.style.display='none'">×</button>
+        <h3 id="validationStatus">⏳ Validating...</h3>
+        <div id="validationResults"></div>
+        <div class="validation-score">
+            <div class="score" id="qualityScore">--</div>
+            <div>Quality Score</div>
+        </div>
+    </div>
+
+    <!-- ========== PRINT BUTTON ========== -->
+    <button class="print-btn" onclick="window.print()">🖨️ Print Dashboard</button>
+
+    <!-- ========== CHART DATA & RENDERING ========== -->
+    <script>
+        // ===== CHART 1: {{CHART_1_TYPE}} =====
+        const chart1Data = {{CHART_1_DATA}};
+        const chart1Layout = {{CHART_1_LAYOUT}};
+        Plotly.newPlot('chart-1', chart1Data, chart1Layout, {responsive: true, displayModeBar: false});
+
+        // ===== CHART 2: {{CHART_2_TYPE}} =====
+        const chart2Data = {{CHART_2_DATA}};
+        const chart2Layout = {{CHART_2_LAYOUT}};
+        Plotly.newPlot('chart-2', chart2Data, chart2Layout, {responsive: true, displayModeBar: false});
+
+        // ===== REAL VALIDATION (RUNS AUTOMATICALLY) =====
+        function runValidation() {
+            const checks = [];
+            let score = 100;
+
+            // Check 1: Charts rendered
+            const chart1Exists = document.getElementById('chart-1').querySelector('.plotly');
+            checks.push({
+                name: 'Charts rendered',
+                pass: !!chart1Exists,
+                impact: 20
+            });
+            if (!chart1Exists) score -= 20;
+
+            // Check 2: KPIs present
+            const kpis = document.querySelectorAll('.kpi-card');
+            checks.push({
+                name: 'KPIs displayed',
+                pass: kpis.length >= 3,
+                impact: 15
+            });
+            if (kpis.length < 3) score -= 15;
+
+            // Check 3: Insights present
+            const insights = document.querySelectorAll('.insight-item');
+            checks.push({
+                name: 'Insights documented',
+                pass: insights.length >= 3,
+                impact: 15
+            });
+            if (insights.length < 3) score -= 15;
+
+            // Check 4: Hypothesis stated
+            const hypothesis = document.querySelector('.hypothesis-card p');
+            checks.push({
+                name: 'Hypothesis tested',
+                pass: hypothesis && hypothesis.textContent.length > 20,
+                impact: 10
+            });
+            if (!hypothesis || hypothesis.textContent.length <= 20) score -= 10;
+
+            // Check 5: Period specified
+            const period = document.querySelector('.header-meta');
+            checks.push({
+                name: 'Period specified',
+                pass: period && period.textContent.includes('Period'),
+                impact: 10
+            });
+            if (!period || !period.textContent.includes('Period')) score -= 10;
+
+            // Render results
+            const panel = document.getElementById('validationPanel');
+            const status = document.getElementById('validationStatus');
+            const results = document.getElementById('validationResults');
+            const scoreEl = document.getElementById('qualityScore');
+
+            const allPassed = checks.every(c => c.pass);
+            const hasCritical = checks.filter(c => !c.pass && c.impact >= 15).length > 0;
+
+            if (allPassed) {
+                panel.className = 'validation-panel passed';
+                status.innerHTML = '✅ All Checks Passed';
+            } else if (hasCritical) {
+                panel.className = 'validation-panel failed';
+                status.innerHTML = '❌ Critical Issues Found';
+            } else {
+                panel.className = 'validation-panel warning';
+                status.innerHTML = '⚠️ Minor Issues Found';
+            }
+
+            results.innerHTML = checks.map(c => `
+                <div class="validation-item ${c.pass ? 'pass' : 'fail'}">
+                    ${c.pass ? '✓' : '✗'} ${c.name}
+                </div>
+            `).join('');
+
+            scoreEl.textContent = score + '/100';
+            scoreEl.style.color = score >= 80 ? 'var(--success)' : score >= 60 ? 'var(--warning)' : 'var(--error)';
+        }
+
+        // Run validation after charts render
+        setTimeout(runValidation, 500);
+    </script>
+</body>
+</html>
+
+
+
+

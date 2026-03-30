@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>CoffeeGo — прототип</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #faf7f3;
+      --surface: #ffffff;
+      --text: #1c1917;
+      --text-muted: #78716c;
+      --border: #e7e5e4;
+      --primary: #5c4033;
+      --primary-hover: #4a3429;
+      --primary-soft: #ede4df;
+      --accent: #3d5c4a;
+      --success: #2d6a4f;
+      --radius: 14px;
+      --radius-sm: 10px;
+      --shadow: 0 2px 12px rgba(28, 25, 23, 0.06);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: linear-gradient(160deg, #e8dfd6 0%, var(--bg) 45%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px 16px calc(24px + var(--safe-bottom));
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 390px;
+      min-height: 780px;
+      background: var(--bg);
+      border-radius: 28px;
+      box-shadow: 0 24px 48px rgba(28, 25, 23, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      padding: 16px 16px 88px;
+      animation: fadeIn 0.22s ease;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .back {
+      background: none;
+      border: none;
+      font: inherit;
+      color: var(--primary);
+      font-weight: 600;
+      padding: 8px 0;
+      cursor: pointer;
+    }
+
+    .back:empty {
+      visibility: hidden;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 1.35rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .tagline {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin: 0 0 20px;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .row-link {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    .row-link button {
+      background: var(--primary-soft);
+      border: none;
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 8px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      border: none;
+      border-radius: var(--radius-sm);
+      font: inherit;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--primary);
+      border: 2px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .search {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 12px 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .search input {
+      border: none;
+      background: transparent;
+      font: inherit;
+      width: 100%;
+      outline: none;
+    }
+
+    .search input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .icon-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    .drink-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .drink-card h3 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+    }
+
+    .drink-card .from {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .drink-card .btn-choose {
+      width: auto;
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin: 20px 0 10px;
+    }
+
+    .section-title:first-of-type {
+      margin-top: 8px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      border: 2px solid var(--border);
+      background: var(--surface);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .chip.selected {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .product-hero {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .product-hero h2 {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+    }
+
+    .product-hero p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .sticky-footer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 56px;
+      padding: 12px 16px;
+      background: linear-gradient(transparent, var(--bg) 30%);
+    }
+
+    .price-line {
+      text-align: center;
+      font-weight: 700;
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+    }
+
+    .cart-item-detail {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin: 8px 0;
+    }
+
+    .cart-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .cart-actions .btn {
+      flex: 1;
+      padding: 12px;
+      font-size: 0.875rem;
+    }
+
+    .btn-ghost {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: none;
+    }
+
+    .btn-danger-ghost {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: none;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin: 16px 0 12px;
+    }
+
+    .success-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #d1fae5;
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 24px auto 16px;
+    }
+
+    .success-title {
+      text-align: center;
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0 0 8px;
+    }
+
+    .success-sub {
+      text-align: center;
+      color: var(--text-muted);
+      margin: 0 0 20px;
+      font-size: 0.95rem;
+    }
+
+    .tab-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 12px 12px calc(12px + var(--safe-bottom));
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -4px 20px rgba(28, 25, 23, 0.04);
+    }
+
+    .tab {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      margin: 0;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 12px;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+
+    .tab svg {
+      width: 26px;
+      height: 26px;
+      display: block;
+    }
+
+    .tab:active {
+      background: var(--primary-soft);
+    }
+
+    .tab.active {
+      color: var(--primary);
+    }
+
+    .toggle-user {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .toggle-user label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .time-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+
+    .time-overlay:not(.hidden) {
+      pointer-events: auto;
+      opacity: 1;
+    }
+
+    .time-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(28, 25, 23, 0.45);
+    }
+
+    .time-sheet {
+      position: relative;
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      padding: 12px 16px calc(20px + var(--safe-bottom));
+      box-shadow: 0 -8px 32px rgba(28, 25, 23, 0.12);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      max-height: 58%;
+    }
+
+    .time-sheet-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 999px;
+      margin: 0 auto 14px;
+    }
+
+    .time-sheet-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      text-align: center;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .time-picker-wrap {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 8px;
+      height: 220px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .time-picker-wrap::before {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 48px;
+      margin-top: -2px;
+      border-radius: 12px;
+      background: var(--primary-soft);
+      border: 1px solid rgba(92, 64, 51, 0.12);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .time-col {
+      flex: 1;
+      max-width: 120px;
+      overflow-y: auto;
+      scroll-snap-type: y mandatory;
+      scroll-padding: 86px 0;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+      z-index: 1;
+      mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+      mask-size: 100% 100%;
+    }
+
+    .time-col-spacer {
+      scroll-snap-align: start;
+      height: 86px;
+      flex-shrink: 0;
+    }
+
+    .time-option {
+      scroll-snap-align: center;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .time-option.active {
+      color: var(--primary);
+    }
+
+    .time-sep {
+      display: flex;
+      align-items: center;
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--primary);
+      padding-bottom: 4px;
+      z-index: 1;
+    }
+
+    .time-sheet-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-sheet {
+      flex: 1;
+      border: none;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    .btn-sheet:active {
+      transform: scale(0.98);
+    }
+
+    .btn-sheet.secondary {
+      background: var(--surface);
+      color: var(--primary);
+      border: 2px solid var(--border);
+    }
+
+    .btn-sheet.primary {
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone" id="phone">
+    <!-- 1 Home -->
+    <div class="screen active" id="screen-home" data-screen="home">
+      <div class="top-bar">
+        <span class="back" aria-hidden="true"></span>
+        <span class="logo">CoffeeGo</span>
+        <span style="width:48px"></span>
+      </div>
+      <p class="tagline">Замовляйте без черги</p>
+
+      <div class="toggle-user">
+        <label>
+          <input type="checkbox" id="toggle-returning" checked />
+          Постійний клієнт (є минуле замовлення)
+        </label>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Самовивіз</div>
+        <div class="card-title">вул. Хрещатик, 12</div>
+        <div class="row-link">
+          <span>Час отримання</span>
+          <button type="button" class="btn-pick-time" data-time-target="home" id="btn-time-home">Обрати час</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btn-repeat">Повторити минуле замовлення</button>
+      <button type="button" class="btn btn-secondary" data-go="menu">Обрати інший напій</button>
+
+      <div class="tab-bar" role="navigation" aria-label="Нижня навігація">
+        <button type="button" class="tab active" aria-label="Головна" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Замовлення">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10a1 1 0 0 1 1 1v16.2l-6-3.65-6 3.65V4a1 1 0 0 1 1-1z"/><path d="M9 8h6M9 12h6"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Профіль">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M6.2 19.5v-.35a5.25 5.25 0 0 1 5.25-5.25h1.1a5.25 5.25 0 0 1 5.25 5.25v.35"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2 Menu -->
+    <div class="screen" id="screen-menu" data-screen="menu">
+      <div class="top-bar">
+        <button type="button" class="back" data-go="home">‹ Назад</button>
+        <span class="logo" style="font-size:1rem">Меню</span>
+        <span style="width:48px"></span>
+      </div>
+
+      <div class="search-row">
+        <div class="search">
+          <span aria-hidden="true">🔍</span>
+          <input type="search" placeholder="Пошук напою" />
+        </div>
+        <button type="button" class="icon-btn" data-go="cart" title="Кошик">🛒</button>
+      </div>
+
+      <div class="drink-card">
+        <h3>Капучино</h3>
+        <p class="from">від 70 ₴</p>
+        <button type="button" class="btn btn-secondary btn-choose" data-go="custom" data-drink="Капучино">Обрати</button>
+      </div>
+      <div class="drink-card">
+        <h3>Лате</h3>
+        <p class="from">від 90 ₴</p>
+        <button type="button" class="btn btn-secondary btn-choose" data-go="custom" data-drink="Лате">Обрати</button>
+      </div>
+      <div class="drink-card">
+        <h3>Американо</h3>
+        <p class="from">від 60 ₴</p>
+        <button type="button" class="btn btn-secondary btn-choose" data-go="custom" data-drink="Американо">Обрати</button>
+      </div>
+
+      <div class="tab-bar" role="navigation" aria-label="Нижня навігація">
+        <button type="button" class="tab active" aria-label="Головна" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Замовлення">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10a1 1 0 0 1 1 1v16.2l-6-3.65-6 3.65V4a1 1 0 0 1 1-1z"/><path d="M9 8h6M9 12h6"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Профіль">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M6.2 19.5v-.35a5.25 5.25 0 0 1 5.25-5.25h1.1a5.25 5.25 0 0 1 5.25 5.25v.35"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 3 Customize -->
+    <div class="screen" id="screen-custom" data-screen="custom">
+      <div class="top-bar">
+        <button type="button" class="back" data-go="menu">‹ Назад</button>
+        <span class="logo" style="font-size:1rem">Налаштування</span>
+        <span style="width:48px"></span>
+      </div>
+
+      <div class="product-hero">
+        <h2 id="custom-drink-name">Капучино</h2>
+        <p>М’який кавовий напій з молоком</p>
+      </div>
+
+      <div class="section-title">Обʼєм</div>
+      <div class="chips" id="chips-size">
+        <button type="button" class="chip selected" data-price="70">200 мл — 70 ₴</button>
+        <button type="button" class="chip" data-price="85">300 мл — 85 ₴</button>
+        <button type="button" class="chip" data-price="95">400 мл — 95 ₴</button>
+      </div>
+
+      <div class="section-title">Молоко</div>
+      <div class="chips" id="chips-milk">
+        <button type="button" class="chip selected">Звичайне</button>
+        <button type="button" class="chip">Безлактозне</button>
+        <button type="button" class="chip">Вівсяне</button>
+      </div>
+
+      <div class="section-title">Цукор</div>
+      <div class="chips" id="chips-sugar">
+        <button type="button" class="chip selected">Без цукру</button>
+        <button type="button" class="chip">1 ложка</button>
+        <button type="button" class="chip">2 ложки</button>
+      </div>
+
+      <div class="section-title">Сироп</div>
+      <div class="chips" id="chips-syrup">
+        <button type="button" class="chip selected">Без сиропу</button>
+        <button type="button" class="chip">Ваніль</button>
+        <button type="button" class="chip">Карамель</button>
+      </div>
+
+      <div style="height:100px"></div>
+
+      <div class="sticky-footer">
+        <div class="price-line">Разом: <span id="live-price">70</span> ₴</div>
+        <button type="button" class="btn btn-primary" id="btn-add-cart">Додати до кошика</button>
+      </div>
+
+      <div class="tab-bar" role="navigation" aria-label="Нижня навігація">
+        <button type="button" class="tab active" aria-label="Головна" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Замовлення">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10a1 1 0 0 1 1 1v16.2l-6-3.65-6 3.65V4a1 1 0 0 1 1-1z"/><path d="M9 8h6M9 12h6"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Профіль">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M6.2 19.5v-.35a5.25 5.25 0 0 1 5.25-5.25h1.1a5.25 5.25 0 0 1 5.25 5.25v.35"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 Cart -->
+    <div class="screen" id="screen-cart" data-screen="cart">
+      <div class="top-bar">
+        <button type="button" class="back" data-go="menu">‹ Назад</button>
+        <span class="logo" style="font-size:1rem">Кошик</span>
+        <span style="width:48px"></span>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Ваше замовлення</div>
+        <div class="card-title" id="cart-drink-title">Капучино</div>
+        <div class="cart-item-detail" id="cart-drink-detail"></div>
+        <div class="card-title" id="cart-line-price">85 ₴</div>
+        <div class="cart-actions">
+          <button type="button" class="btn btn-ghost">Змінити</button>
+          <button type="button" class="btn btn-danger-ghost">Видалити</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Отримання</div>
+        <div class="card-title">вул. Хрещатик, 12</div>
+        <div class="row-link" style="border:none;padding-top:8px;margin-top:8px">
+          <span>Час отримання</span>
+          <button type="button" class="btn-pick-time" data-time-target="cart" id="btn-time-cart">17:00 ▾</button>
+        </div>
+      </div>
+
+      <div class="total-row">
+        <span>До сплати</span>
+        <span id="cart-total">85 ₴</span>
+      </div>
+      <button type="button" class="btn btn-primary" data-go="success">Оплатити</button>
+
+      <div class="tab-bar" role="navigation" aria-label="Нижня навігація">
+        <button type="button" class="tab active" aria-label="Головна" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Замовлення">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10a1 1 0 0 1 1 1v16.2l-6-3.65-6 3.65V4a1 1 0 0 1 1-1z"/><path d="M9 8h6M9 12h6"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Профіль">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M6.2 19.5v-.35a5.25 5.25 0 0 1 5.25-5.25h1.1a5.25 5.25 0 0 1 5.25 5.25v.35"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 5 Success -->
+    <div class="screen" id="screen-success" data-screen="success">
+      <div class="top-bar">
+        <span class="back"></span>
+        <span style="width:48px"></span>
+        <span style="width:48px"></span>
+      </div>
+
+      <div class="success-icon" aria-hidden="true">✓</div>
+      <h1 class="success-title">Оплата успішна</h1>
+      <p class="success-sub">Ваше замовлення прийнято. Воно буде готове за вказаною адресою та часом.</p>
+
+      <div class="card">
+        <div class="cart-item-detail" id="success-detail"></div>
+        <div style="margin-top:12px;font-size:0.9rem">
+          <strong>Адреса:</strong> вул. Хрещатик, 12<br />
+          <strong>Час отримання:</strong> <span id="success-time">17:00</span>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-secondary">Переглянути замовлення</button>
+      <button type="button" class="btn btn-primary" data-go="home">На головну</button>
+
+      <div class="tab-bar" role="navigation" aria-label="Нижня навігація">
+        <button type="button" class="tab active" aria-label="Головна" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Замовлення">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10a1 1 0 0 1 1 1v16.2l-6-3.65-6 3.65V4a1 1 0 0 1 1-1z"/><path d="M9 8h6M9 12h6"/></svg>
+        </button>
+        <button type="button" class="tab" aria-label="Профіль">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M6.2 19.5v-.35a5.25 5.25 0 0 1 5.25-5.25h1.1a5.25 5.25 0 0 1 5.25 5.25v.35"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="time-overlay hidden" id="time-overlay" role="dialog" aria-modal="true" aria-labelledby="time-sheet-title" aria-hidden="true">
+      <div class="time-backdrop" id="time-backdrop" tabindex="-1"></div>
+      <div class="time-sheet">
+        <div class="time-sheet-handle" aria-hidden="true"></div>
+        <div class="time-sheet-title" id="time-sheet-title">Час отримання</div>
+        <div class="time-picker-wrap">
+          <div class="time-col" id="col-hours" aria-label="Година"></div>
+          <span class="time-sep" aria-hidden="true">:</span>
+          <div class="time-col" id="col-mins" aria-label="Хвилини"></div>
+        </div>
+        <div class="time-sheet-actions">
+          <button type="button" class="btn-sheet secondary" id="time-cancel">Скасувати</button>
+          <button type="button" class="btn-sheet primary" id="time-confirm">Готово</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const screens = document.querySelectorAll(".screen");
+    const customName = document.getElementById("custom-drink-name");
+    const livePrice = document.getElementById("live-price");
+    const cartTitle = document.getElementById("cart-drink-title");
+    const cartDetail = document.getElementById("cart-drink-detail");
+    const cartLinePrice = document.getElementById("cart-line-price");
+    const cartTotal = document.getElementById("cart-total");
+    const successDetail = document.getElementById("success-detail");
+    const btnRepeat = document.getElementById("btn-repeat");
+    const toggleReturning = document.getElementById("toggle-returning");
+
+    function showScreen(id) {
+      screens.forEach((s) => s.classList.toggle("active", s.id === id));
+      window.scrollTo(0, 0);
+      document.getElementById("phone").scrollTop = 0;
+    }
+
+    document.querySelectorAll("[data-go]").forEach((el) => {
+      el.addEventListener("click", () => {
+        const go = el.getAttribute("data-go");
+        const map = { home: "screen-home", menu: "screen-menu", custom: "screen-custom", cart: "screen-cart", success: "screen-success" };
+        if (map[go]) showScreen(map[go]);
+        if (go === "custom" && el.dataset.drink) {
+          customName.textContent = el.dataset.drink;
+        }
+      });
+    });
+
+    function chipGroup(container, singleSelect = true) {
+      const chips = container.querySelectorAll(".chip");
+      chips.forEach((c) => {
+        c.addEventListener("click", () => {
+          if (singleSelect) chips.forEach((x) => x.classList.remove("selected"));
+          c.classList.add("selected");
+          if (container.id === "chips-size") updatePrice();
+        });
+      });
+    }
+
+    chipGroup(document.getElementById("chips-size"));
+    chipGroup(document.getElementById("chips-milk"));
+    chipGroup(document.getElementById("chips-sugar"));
+    chipGroup(document.getElementById("chips-syrup"));
+
+    function updatePrice() {
+      const sel = document.querySelector("#chips-size .chip.selected");
+      if (sel) livePrice.textContent = sel.dataset.price;
+    }
+
+    function labelSize() {
+      const t = document.querySelector("#chips-size .chip.selected")?.textContent?.split("—")[0]?.trim() || "";
+      return t;
+    }
+    function labelMilk() {
+      return document.querySelector("#chips-milk .chip.selected")?.textContent || "";
+    }
+    function labelSugar() {
+      return document.querySelector("#chips-sugar .chip.selected")?.textContent || "";
+    }
+    function labelSyrup() {
+      return document.querySelector("#chips-syrup .chip.selected")?.textContent || "";
+    }
+
+    document.getElementById("btn-add-cart").addEventListener("click", () => {
+      const name = customName.textContent;
+      const price = livePrice.textContent;
+      const lines = [labelSize(), labelMilk(), labelSugar(), labelSyrup()].filter(Boolean);
+      cartTitle.textContent = name;
+      cartDetail.innerHTML = lines.join("<br />");
+      cartLinePrice.textContent = price + " ₴";
+      cartTotal.textContent = price + " ₴";
+      successDetail.innerHTML = `<strong>${name}</strong><br />${lines.join("<br />")}<br /><strong>${price} ₴</strong>`;
+      showScreen("screen-cart");
+    });
+
+    toggleReturning.addEventListener("change", () => {
+      btnRepeat.classList.toggle("hidden", !toggleReturning.checked);
+    });
+
+    document.getElementById("btn-repeat").addEventListener("click", () => {
+      customName.textContent = "Капучино";
+      document.querySelectorAll("#chips-size .chip").forEach((c, i) => c.classList.toggle("selected", i === 1));
+      document.querySelectorAll("#chips-milk .chip").forEach((c, i) => c.classList.toggle("selected", i === 2));
+      document.querySelectorAll("#chips-sugar .chip").forEach((c, i) => c.classList.toggle("selected", i === 1));
+      document.querySelectorAll("#chips-syrup .chip").forEach((c, i) => c.classList.toggle("selected", i === 1));
+      updatePrice();
+      document.getElementById("btn-add-cart").click();
+    });
+
+    /* —— Час отримання (bottom sheet) —— */
+    const timeOverlay = document.getElementById("time-overlay");
+    const colHours = document.getElementById("col-hours");
+    const colMins = document.getElementById("col-mins");
+    const btnTimeHome = document.getElementById("btn-time-home");
+    const btnTimeCart = document.getElementById("btn-time-cart");
+    const successTimeEl = document.getElementById("success-time");
+
+    let pickupH = 17;
+    let pickupM = 0;
+    let pickupLabelsApplied = false;
+    let timeColsBuilt = false;
+
+    function formatPickup() {
+      return `${String(pickupH).padStart(2, "0")}:${String(pickupM).padStart(2, "0")}`;
+    }
+
+    function syncTimeButtons() {
+      btnTimeCart.textContent = `${formatPickup()} ▾`;
+      if (pickupLabelsApplied) {
+        btnTimeHome.textContent = formatPickup();
+      }
+      successTimeEl.textContent = formatPickup();
+    }
+
+    function buildTimeColumns() {
+      if (timeColsBuilt) return;
+      const spacer = () => {
+        const d = document.createElement("div");
+        d.className = "time-col-spacer";
+        return d;
+      };
+      const fill = (col, from, to, pad2) => {
+        col.appendChild(spacer());
+        for (let v = from; v <= to; v++) {
+          const o = document.createElement("div");
+          o.className = "time-option";
+          o.dataset.value = String(v);
+          o.textContent = pad2 ? String(v).padStart(2, "0") : String(v);
+          col.appendChild(o);
+        }
+        col.appendChild(spacer());
+      };
+      fill(colHours, 6, 23, false);
+      fill(colMins, 0, 59, true);
+      timeColsBuilt = true;
+
+      colHours.querySelectorAll(".time-option").forEach((o) => {
+        o.addEventListener("click", () => {
+          o.scrollIntoView({ block: "center", behavior: "smooth" });
+        });
+      });
+      colMins.querySelectorAll(".time-option").forEach((o) => {
+        o.addEventListener("click", () => {
+          o.scrollIntoView({ block: "center", behavior: "smooth" });
+        });
+      });
+    }
+
+    function scrollColToValue(col, value) {
+      const opt = col.querySelector(`.time-option[data-value="${value}"]`);
+      if (opt) {
+        opt.scrollIntoView({ block: "center", behavior: "auto" });
+      }
+    }
+
+    function readCenteredValue(col) {
+      const rect = col.getBoundingClientRect();
+      const cy = rect.top + rect.height / 2;
+      let best = null;
+      let bestDist = Infinity;
+      col.querySelectorAll(".time-option").forEach((o) => {
+        const r = o.getBoundingClientRect();
+        const oc = r.top + r.height / 2;
+        const d = Math.abs(oc - cy);
+        if (d < bestDist) {
+          bestDist = d;
+          best = parseInt(o.dataset.value, 10);
+        }
+      });
+      return best;
+    }
+
+    function highlightCentered() {
+      [colHours, colMins].forEach((col) => {
+        const rect = col.getBoundingClientRect();
+        const cy = rect.top + rect.height / 2;
+        col.querySelectorAll(".time-option").forEach((o) => {
+          const r = o.getBoundingClientRect();
+          const oc = r.top + r.height / 2;
+          o.classList.toggle("active", Math.abs(oc - cy) < 26);
+        });
+      });
+    }
+
+    let highlightRaf = 0;
+    function onTimeColScroll() {
+      cancelAnimationFrame(highlightRaf);
+      highlightRaf = requestAnimationFrame(highlightCentered);
+    }
+
+    function openTimePicker() {
+      buildTimeColumns();
+      timeOverlay.classList.remove("hidden");
+      timeOverlay.setAttribute("aria-hidden", "false");
+      scrollColToValue(colHours, pickupH);
+      scrollColToValue(colMins, pickupM);
+      requestAnimationFrame(() => {
+        highlightCentered();
+      });
+    }
+
+    function closeTimePicker() {
+      timeOverlay.classList.add("hidden");
+      timeOverlay.setAttribute("aria-hidden", "true");
+    }
+
+    function applyPickupFromPicker() {
+      const h = readCenteredValue(colHours);
+      const m = readCenteredValue(colMins);
+      if (h !== null) pickupH = h;
+      if (m !== null) pickupM = m;
+      pickupLabelsApplied = true;
+      syncTimeButtons();
+    }
+
+    document.querySelectorAll(".btn-pick-time").forEach((btn) => {
+      btn.addEventListener("click", () => openTimePicker());
+    });
+    document.getElementById("time-backdrop").addEventListener("click", closeTimePicker);
+    document.getElementById("time-cancel").addEventListener("click", closeTimePicker);
+    document.getElementById("time-confirm").addEventListener("click", () => {
+      applyPickupFromPicker();
+      closeTimePicker();
+    });
+
+    colHours.addEventListener("scroll", onTimeColScroll, { passive: true });
+    colMins.addEventListener("scroll", onTimeColScroll, { passive: true });
+
+    const origShowScreen = showScreen;
+    showScreen = function (id) {
+      origShowScreen(id);
+      if (id === "screen-success") {
+        successTimeEl.textContent = formatPickup();
+      }
+    };
+  </script>
+</body>
+</html>

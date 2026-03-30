@@ -1,0 +1,257 @@
+<!--
+    UNIVERSAL OUTPUT VALIDATION BLOCK v1.0
+    
+    Include this at the END of every HTML output.
+    It runs validation and shows results before user can use the output.
+    
+    Usage: Copy this entire block into your HTML before </body>
+-->
+
+<div id="validation-panel" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #1F2937 0%, #111827 100%);
+    color: white;
+    padding: 15px 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    z-index: 99999;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+">
+    <div style="display: flex; align-items: center; gap: 15px;">
+        <span id="validation-status" style="
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+        ">
+            ⏳ Validating...
+        </span>
+        <span id="validation-summary" style="color: #9CA3AF;"></span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <button onclick="toggleValidationDetails()" style="
+            background: transparent;
+            border: 1px solid #4B5563;
+            color: #D1D5DB;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        ">Show Details</button>
+        <button onclick="dismissValidation()" style="
+            background: #34D399;
+            border: none;
+            color: #111827;
+            padding: 6px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        ">✓ Acknowledge</button>
+    </div>
+</div>
+
+<div id="validation-details" style="
+    display: none;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    background: #1F2937;
+    color: white;
+    padding: 20px;
+    font-family: monospace;
+    font-size: 12px;
+    z-index: 99998;
+    border-top: 1px solid #374151;
+">
+</div>
+
+<script>
+(function() {
+    // Validation rules
+    const html = document.documentElement.outerHTML;
+    const errors = [];
+    const warnings = [];
+    
+    // ========== PRINT CSS CHECKS ==========
+    
+    // Check @page { margin: 0 }
+    const styleContent = Array.from(document.styleSheets)
+        .map(s => { try { return Array.from(s.cssRules).map(r => r.cssText).join(' '); } catch(e) { return ''; } })
+        .join(' ');
+    
+    if (!styleContent.includes('@page') || !html.includes('margin: 0')) {
+        if (!html.includes('@page')) {
+            errors.push({
+                type: 'PRINT',
+                severity: 'CRITICAL',
+                msg: 'Missing @page rule — browser will add headers/footers when printing',
+                fix: 'Add @media print { @page { margin: 0 !important; } }'
+            });
+        }
+    }
+    
+    // Check page-break-after
+    if (!html.includes('page-break-after')) {
+        warnings.push({
+            type: 'PRINT',
+            severity: 'HIGH',
+            msg: 'Missing page-break-after — pages may merge when printing',
+            fix: 'Add page-break-after: always to .page or .slide'
+        });
+    }
+    
+    // Check page-break-inside
+    if (!html.includes('page-break-inside')) {
+        warnings.push({
+            type: 'PRINT',
+            severity: 'MEDIUM',
+            msg: 'Missing page-break-inside: avoid — tables may break across pages',
+            fix: 'Add page-break-inside: avoid to tables, cards, boxes'
+        });
+    }
+    
+    // Check print-color-adjust
+    if (!html.includes('print-color-adjust') && !html.includes('-webkit-print-color-adjust')) {
+        warnings.push({
+            type: 'PRINT',
+            severity: 'LOW',
+            msg: 'Missing print-color-adjust — backgrounds may not print',
+            fix: 'Add -webkit-print-color-adjust: exact'
+        });
+    }
+    
+    // ========== CONTENT CHECKS ==========
+    
+    // Check for overflow hidden on slides
+    const slides = document.querySelectorAll('.slide, .page');
+    if (slides.length > 0) {
+        const slideStyles = window.getComputedStyle(slides[0]);
+        if (slideStyles.overflow !== 'hidden') {
+            warnings.push({
+                type: 'CONTENT',
+                severity: 'MEDIUM',
+                msg: 'Slides missing overflow: hidden — content may bleed outside',
+                fix: 'Add overflow: hidden to .slide or .page'
+            });
+        }
+    }
+    
+    // Check content density (rough estimate)
+    slides.forEach((slide, i) => {
+        const text = slide.textContent || '';
+        const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+        if (words > 150) {
+            warnings.push({
+                type: 'DENSITY',
+                severity: 'HIGH',
+                msg: `Slide ${i+1} has ${words} words (recommended: <100)`,
+                fix: 'Reduce content or split into multiple slides'
+            });
+        }
+    });
+    
+    // ========== ACCESSIBILITY CHECKS ==========
+    
+    const images = document.querySelectorAll('img');
+    images.forEach((img, i) => {
+        if (!img.alt) {
+            warnings.push({
+                type: 'A11Y',
+                severity: 'LOW',
+                msg: `Image ${i+1} missing alt text`,
+                fix: 'Add alt attribute to all images'
+            });
+        }
+    });
+    
+    // ========== RENDER VALIDATION UI ==========
+    
+    const statusEl = document.getElementById('validation-status');
+    const summaryEl = document.getElementById('validation-summary');
+    const detailsEl = document.getElementById('validation-details');
+    
+    const totalIssues = errors.length + warnings.length;
+    
+    if (errors.length > 0) {
+        statusEl.innerHTML = '❌ FAILED';
+        statusEl.style.background = '#EF4444';
+        statusEl.style.color = 'white';
+    } else if (warnings.length > 0) {
+        statusEl.innerHTML = '⚠️ WARNINGS';
+        statusEl.style.background = '#F59E0B';
+        statusEl.style.color = '#111827';
+    } else {
+        statusEl.innerHTML = '✅ PASSED';
+        statusEl.style.background = '#34D399';
+        statusEl.style.color = '#111827';
+    }
+    
+    summaryEl.textContent = `${errors.length} errors, ${warnings.length} warnings`;
+    
+    // Build details
+    let detailsHTML = '<h3 style="margin: 0 0 15px 0; color: #F9FAFB;">Validation Details</h3>';
+    
+    if (errors.length > 0) {
+        detailsHTML += '<div style="margin-bottom: 15px;"><strong style="color: #EF4444;">🔴 ERRORS (Must Fix):</strong></div>';
+        errors.forEach(e => {
+            detailsHTML += `<div style="background: rgba(239,68,68,0.1); border-left: 3px solid #EF4444; padding: 10px; margin-bottom: 8px;">
+                <div style="color: #F87171; font-weight: 600;">[${e.type}] ${e.msg}</div>
+                <div style="color: #9CA3AF; margin-top: 4px;">Fix: ${e.fix}</div>
+            </div>`;
+        });
+    }
+    
+    if (warnings.length > 0) {
+        detailsHTML += '<div style="margin: 15px 0;"><strong style="color: #F59E0B;">🟡 WARNINGS:</strong></div>';
+        warnings.forEach(w => {
+            detailsHTML += `<div style="background: rgba(245,158,11,0.1); border-left: 3px solid #F59E0B; padding: 10px; margin-bottom: 8px;">
+                <div style="color: #FCD34D; font-weight: 600;">[${w.type}] ${w.msg}</div>
+                <div style="color: #9CA3AF; margin-top: 4px;">Fix: ${w.fix}</div>
+            </div>`;
+        });
+    }
+    
+    if (totalIssues === 0) {
+        detailsHTML += '<div style="color: #34D399; text-align: center; padding: 20px;">✅ All validation checks passed!</div>';
+    }
+    
+    detailsEl.innerHTML = detailsHTML;
+    
+    // Store validation result
+    window.validationResult = { errors, warnings, passed: errors.length === 0 };
+})();
+
+function toggleValidationDetails() {
+    const details = document.getElementById('validation-details');
+    details.style.display = details.style.display === 'none' ? 'block' : 'none';
+}
+
+function dismissValidation() {
+    document.getElementById('validation-panel').style.display = 'none';
+    document.getElementById('validation-details').style.display = 'none';
+    document.body.style.marginTop = '0';
+}
+
+// Add margin to body to account for fixed panel
+document.body.style.marginTop = '60px';
+</script>
+
+<!-- END VALIDATION BLOCK -->
+
+
+
+

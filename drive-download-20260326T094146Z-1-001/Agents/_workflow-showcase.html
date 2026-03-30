@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог воркфлоуів — The Radiant Operator</title>
+    <style>
+        :root {
+            --gold: #D4A744;
+            --gold-dark: #B8942E;
+            --gold-light: #E8C76B;
+            --bg-primary: #1C1C28;
+            --bg-secondary: #252532;
+            --bg-tertiary: #2D2D3D;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0B0;
+            --text-muted: #6B6B7B;
+            --success: #4CAF50;
+            --info: #2196F3;
+            --warning: #FF9800;
+            --bolt-green: #34D186;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            padding: 3rem 2rem;
+            border-bottom: 2px solid var(--gold);
+            text-align: center;
+        }
+        .header h1 { font-size: 2.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 700; letter-spacing: -0.02em; }
+        .header .subtitle { color: var(--text-secondary); font-size: 1.15rem; margin-bottom: 1.5rem; }
+        .stats-row { display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; }
+        .stat { text-align: center; }
+        .stat-number { font-size: 2.5rem; font-weight: 700; color: var(--gold); line-height: 1; }
+        .stat-label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+        /* Section Divider */
+        .block-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 3rem 0 1.5rem;
+            scroll-margin-top: 20px;
+        }
+        .block-divider h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .block-divider h2.gold { color: var(--gold); }
+        .block-divider h2.green { color: var(--bolt-green); }
+        .block-divider .line { flex: 1; height: 1px; background: var(--bg-tertiary); }
+        .block-description { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem; }
+
+        /* Sticky Nav */
+        .sticky-nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg-primary);
+            padding: 12px 0;
+            border-bottom: 1px solid var(--bg-tertiary);
+            margin-bottom: 1rem;
+        }
+        .sticky-nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .nav-link {
+            padding: 8px 18px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .nav-link:hover { color: var(--text-primary); border-color: var(--bg-tertiary); }
+        .nav-link.uc { border-color: rgba(52,209,134,0.3); }
+        .nav-link.uc:hover { border-color: var(--bolt-green); color: var(--bolt-green); }
+        .nav-link.ag { border-color: rgba(212,167,68,0.3); }
+        .nav-link.ag:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Controls */
+        .controls {
+            background: var(--bg-secondary);
+            padding: 1.25rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+        .search-row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .search-box {
+            flex: 1; padding: 0.75rem 1.25rem;
+            border: 1px solid var(--bg-tertiary); border-radius: 8px;
+            background: var(--bg-primary); color: var(--text-primary);
+            font-size: 0.95rem; transition: border-color 0.2s;
+        }
+        .search-box:focus { outline: none; border-color: var(--gold); }
+        .search-box::placeholder { color: var(--text-muted); }
+        .filter-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .filter-btn {
+            padding: 0.45rem 0.9rem; border: 1px solid var(--bg-tertiary); border-radius: 6px;
+            background: transparent; color: var(--text-secondary); cursor: pointer;
+            font-size: 0.82rem; transition: all 0.2s;
+        }
+        .filter-btn:hover { border-color: var(--gold); color: var(--gold); }
+        .filter-btn.active { background: var(--gold); border-color: var(--gold); color: var(--bg-primary); font-weight: 600; }
+        .filter-btn-green.active { background: var(--bolt-green); border-color: var(--bolt-green); }
+        .filter-btn-green:hover { border-color: var(--bolt-green); color: var(--bolt-green); }
+
+        /* Card Grid */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
+            gap: 1.25rem;
+        }
+
+        /* Workflow Card (agents) */
+        .wf-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid transparent;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .wf-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .wf-card .card-top { margin-bottom: 0.75rem; }
+        .badge {
+            display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px;
+            font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 0.6rem;
+        }
+        .badge.analysis { background: rgba(33,150,243,.15); color: #64B5F6; }
+        .badge.creation { background: rgba(156,39,176,.15); color: #CE93D8; }
+        .badge.strategy { background: rgba(255,152,0,.15); color: #FFB74D; }
+        .badge.content { background: rgba(233,30,99,.15); color: #F48FB1; }
+        .badge.product { background: rgba(0,188,212,.15); color: #4DD0E1; }
+        .badge.people { background: rgba(255,87,34,.15); color: #FF8A65; }
+        .badge.productivity { background: rgba(96,125,139,.15); color: #90A4AE; }
+        .wf-card h3 { color: var(--text-primary); font-size: 1.1rem; margin-bottom: 0.4rem; font-weight: 600; }
+        .wf-card .desc { color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 0.75rem; flex-grow: 1; }
+        .meta-row { display: flex; gap: 1rem; margin-bottom: 0.75rem; font-size: 0.78rem; }
+        .meta-item { display: flex; align-items: center; gap: 0.3rem; color: var(--text-muted); }
+        .agents-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem; }
+        .agent-tag {
+            background: rgba(212,167,68,.12); color: var(--gold-light);
+            padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.72rem;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        .prompt-preview {
+            background: var(--bg-primary); padding: 0.75rem; border-radius: 6px;
+            font-family: 'SF Mono', Monaco, monospace; font-size: 0.78rem;
+            color: var(--text-muted); margin-bottom: 0.75rem; border-left: 3px solid var(--gold);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .copy-btn {
+            width: 100%; padding: 0.65rem; background: var(--gold); color: var(--bg-primary);
+            border: none; border-radius: 6px; font-weight: 600; font-size: 0.85rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .copy-btn:hover { background: var(--gold-light); }
+        .copy-btn.copied { background: var(--success); }
+
+        /* Use Case Card */
+        .uc-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid transparent;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .uc-card:hover { border-color: var(--bolt-green); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .uc-card .card-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+        .uc-card .uc-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .uc-card h3 { color: var(--text-primary); font-size: 1.1rem; margin-bottom: 0.3rem; font-weight: 600; }
+        .uc-card .subtitle { color: var(--text-muted); font-size: 0.82rem; margin-bottom: 0.75rem; }
+        .uc-card .desc { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.75rem; flex-grow: 1; }
+        .uc-card .prompt-preview { border-left-color: var(--bolt-green); }
+        .uc-card .copy-btn { background: var(--bolt-green); }
+        .uc-card .copy-btn:hover { background: #2ab872; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;
+            padding: 2rem; backdrop-filter: blur(4px);
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: var(--bg-secondary); border-radius: 16px; max-width: 720px; width: 100%;
+            max-height: 85vh; overflow-y: auto; border: 1px solid var(--bg-tertiary);
+        }
+        .modal-header {
+            padding: 1.5rem 1.5rem 1rem; border-bottom: 1px solid var(--bg-tertiary);
+            display: flex; justify-content: space-between; align-items: flex-start;
+            position: sticky; top: 0; background: var(--bg-secondary); z-index: 1;
+        }
+        .modal-header h3 { font-size: 1.2rem; color: var(--text-primary); }
+        .modal-header p { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+        .modal-close {
+            background: var(--bg-tertiary); border: none; color: var(--text-secondary);
+            width: 32px; height: 32px; border-radius: 8px; font-size: 1.2rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; margin-left: 12px;
+        }
+        .modal-close:hover { background: var(--bg-primary); color: var(--text-primary); }
+        .modal-body { padding: 1.5rem; }
+        .modal-prompt {
+            background: var(--bg-primary); border-radius: 10px; padding: 1.25rem;
+            border-left: 3px solid var(--bolt-green); margin-bottom: 1rem;
+        }
+        .modal-prompt .label { color: var(--bolt-green); font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+        .modal-prompt pre {
+            white-space: pre-wrap; word-wrap: break-word;
+            font-family: 'SF Mono', Monaco, monospace; font-size: 0.82rem;
+            color: var(--text-secondary); line-height: 1.7;
+        }
+        .modal-tips {
+            background: rgba(52,209,134,0.06); border: 1px solid rgba(52,209,134,0.15);
+            border-radius: 10px; padding: 1rem 1.25rem;
+        }
+        .modal-tips h5 { color: var(--bolt-green); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+        .modal-tips li { font-size: 0.82rem; color: var(--text-secondary); padding: 3px 0 3px 18px; position: relative; list-style: none; }
+        .modal-tips li::before { content: '→'; position: absolute; left: 0; color: var(--bolt-green); }
+        .modal-tips ul { padding: 0; }
+        .modal-copy-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 20px; background: var(--bolt-green); color: #fff;
+            border: none; border-radius: 8px; font-weight: 600; font-size: 0.88rem;
+            cursor: pointer; margin-top: 1rem; transition: all 0.2s;
+        }
+        .modal-copy-btn:hover { background: #2ab872; }
+        .modal-copy-btn.copied { background: var(--success); }
+
+        /* Quick Start */
+        .quick-start {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-radius: 16px; padding: 2rem; margin-bottom: 1.5rem;
+            border: 1px solid var(--bg-tertiary);
+        }
+        .quick-start h2 { color: var(--gold); margin-bottom: 1.25rem; font-size: 1.35rem; }
+        .quick-start-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+        .quick-start-item { background: var(--bg-primary); padding: 1.25rem; border-radius: 8px; }
+        .quick-start-item h4 { color: var(--text-primary); margin-bottom: 0.4rem; font-size: 0.95rem; }
+        .quick-start-item p { color: var(--text-secondary); font-size: 0.82rem; margin-bottom: 0.6rem; }
+        .quick-start-item code { display: block; background: var(--bg-secondary); padding: 0.65rem; border-radius: 4px; font-size: 0.78rem; color: var(--gold); font-family: 'SF Mono', Monaco, monospace; }
+
+        .no-results { text-align: center; padding: 4rem 2rem; color: var(--text-muted); grid-column: 1 / -1; }
+        .no-results h3 { color: var(--text-secondary); margin-bottom: 0.5rem; }
+
+        .footer {
+            text-align: center; padding: 2rem; color: var(--text-muted);
+            font-size: 0.85rem; border-top: 1px solid var(--bg-tertiary); margin-top: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .stats-row { gap: 1.5rem; }
+            .card-grid { grid-template-columns: 1fr; }
+            .search-row { flex-direction: column; }
+            .sticky-nav-inner { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <h1>Каталог воркфлоуів</h1>
+    <p class="subtitle">Що можна зробити за допомогою стеку агентів The Radiant Operator</p>
+    <div class="stats-row">
+        <div class="stat"><div class="stat-number">17</div><div class="stat-label">Юзкейсів</div></div>
+        <div class="stat"><div class="stat-number">25</div><div class="stat-label">Воркфлоуів</div></div>
+        <div class="stat"><div class="stat-number">45</div><div class="stat-label">Агентів</div></div>
+    </div>
+</header>
+
+<nav class="sticky-nav">
+    <div class="sticky-nav-inner">
+        <a href="#section-usecases" class="nav-link uc">Юзкейси для менеджерів</a>
+        <a href="#section-agents" class="nav-link ag">Каталог воркфлоуів агентів</a>
+    </div>
+</nav>
+
+<main class="container">
+
+    <!-- ============================================ -->
+    <!-- BLOCK 1: USE CASES -->
+    <!-- ============================================ -->
+    <div id="section-usecases" class="block-divider" style="margin-top:1rem">
+        <h2 class="green">Юзкейси для менеджерів</h2>
+        <div class="line"></div>
+    </div>
+    <p class="block-description">Реальні приклади задач з готовими промптами. Натисніть на картку — відкриється повний промпт, який можна скопіювати та адаптувати під себе.</p>
+
+    <div class="controls" id="uc-controls">
+        <div class="filter-row">
+            <button class="filter-btn filter-btn-green active" data-uc-cat="all">Всі юзкейси</button>
+            <button class="filter-btn filter-btn-green" data-uc-cat="analysis">Аналітика</button>
+            <button class="filter-btn filter-btn-green" data-uc-cat="creation">Створення</button>
+            <button class="filter-btn filter-btn-green" data-uc-cat="strategy">Стратегія</button>
+            <button class="filter-btn filter-btn-green" data-uc-cat="content">Контент</button>
+            <button class="filter-btn filter-btn-green" data-uc-cat="product">Продукт</button>
+            <button class="filter-btn filter-btn-green" data-uc-cat="people">Команда</button>
+            <button class="filter-btn filter-btn-green" data-uc-cat="productivity">Продуктивність</button>
+        </div>
+    </div>
+
+    <div class="card-grid" id="uc-grid"></div>
+
+    <!-- ============================================ -->
+    <!-- BLOCK 2: AGENT WORKFLOWS -->
+    <!-- ============================================ -->
+    <div id="section-agents" class="block-divider">
+        <h2 class="gold">Каталог воркфлоуів агентів</h2>
+        <div class="line"></div>
+    </div>
+    <p class="block-description">Воркфлоуі стеку агентів — від аналітики до створення контенту. Кожен містить короткий промпт для швидкого старту.</p>
+
+    <section class="quick-start">
+        <h2>Швидкий старт — просто опишіть задачу</h2>
+        <div class="quick-start-grid">
+            <div class="quick-start-item">
+                <h4>Не знаєте, який агент?</h4>
+                <p>Скажіть Оркестратору звичайною мовою:</p>
+                <code>"Конверсія впала на 15%. Допоможи розібратись чому."</code>
+            </div>
+            <div class="quick-start-item">
+                <h4>Хочете конкретний воркфлоу?</h4>
+                <p>Скопіюйте промпт нижче:</p>
+                <code>"Створи презентацію про MECE для бізнес-аудиторії"</code>
+            </div>
+            <div class="quick-start-item">
+                <h4>Знаєте потрібного агента?</h4>
+                <p>Викличте його напряму:</p>
+                <code>@data-analyst проаналізуй цей CSV</code>
+            </div>
+        </div>
+    </section>
+
+    <div class="controls" id="wf-controls">
+        <div class="search-row">
+            <input type="text" class="search-box" id="search" placeholder="Пошук воркфлоуів... (наприклад, 'презентація', 'дані', 'контент')">
+        </div>
+        <div class="filter-row">
+            <button class="filter-btn active" data-wf-cat="all">Всі воркфлоуі</button>
+            <button class="filter-btn" data-wf-cat="analysis">Аналітика</button>
+            <button class="filter-btn" data-wf-cat="creation">Створення</button>
+            <button class="filter-btn" data-wf-cat="strategy">Стратегія</button>
+            <button class="filter-btn" data-wf-cat="content">Контент</button>
+            <button class="filter-btn" data-wf-cat="product">Продукт</button>
+            <button class="filter-btn" data-wf-cat="people">Команда</button>
+            <button class="filter-btn" data-wf-cat="productivity">Продуктивність</button>
+        </div>
+    </div>
+
+    <div class="card-grid" id="wf-grid"></div>
+
+</main>
+
+<!-- Modal for Use Case details -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <div class="modal-header">
+            <div>
+                <h3 id="modal-title"></h3>
+                <p id="modal-subtitle"></p>
+            </div>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-prompt">
+                <div class="label">Приклад промпту</div>
+                <pre id="modal-prompt-text"></pre>
+            </div>
+            <button class="modal-copy-btn" id="modal-copy-btn" onclick="copyModalPrompt(this)">Скопіювати промпт</button>
+            <div class="modal-tips" id="modal-tips"></div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <p>Agent Stack v3.0 — 45 агентів, одна розмова</p>
+    <p>Створено для The Radiant Operator</p>
+</footer>
+
+<script id="uc-json" type="application/json">
+[
+{"id":"uc1","cat":"analysis","icon":"📊","title":"Комплексний MBR звіт для партнера","sub":"HTML-звіт з графіками, таблицями та KPI","time":"30-60 хв","dif":"Середній","prompt":"Мені потрібно підготувати комплексний звіт в HTML по роботі закладу, в ньому мають бути таблиці, графіки і KPI-картки.\n\nІнформацію по метрикам Bolt Food можеш взяти тут @context_files/Bolt_Food_Metrics_Glossary.md\nПо метрикам із Looker (якщо потрібно) можеш брати тут @context_files/Looker_Explores_Datasources_Guide.md\n\nПартнер [НАЗВА ЗАКЛАДУ], місто [МІСТО], звіт за [ПЕРІОД] тижнів.\n\nЗвіт буде містити метрики по замовленням, платному просуванню, заробітку закладу, витратам на промо, операційні метрики, метрики по юзерах, метрики по кур'єрах.\n\nДодаю всі файли CSV:\n@[шлях]/orders.csv — доставлені замовлення\n@[шлях]/net_sales.csv — продажі провайдера після знижки\n@[шлях]/AOV.csv — середній чек\n@[шлях]/Availability.csv — активність в додатку\n@[шлях]/Acceptance.csv — прийняття замовлень\n@[шлях]/Active_users.csv — активні клієнти\n@[шлях]/Order_Frequency.csv — частота замовлень\n@[шлях]/new_users.csv — нові клієнти\n\n!!! по активним клієнтам, частоті замовлень та новим клієнтам ознайомся хто є хто в @[шлях]/Users_Cohorts.txt та додай опис у звіт (без порушення NDA)\n\n@[шлях]/Campaigns_Spend_by_Bolt.csv — витрати Bolt Food на промо\n@[шлях]/Campaigns_Spend_by_provider.csv — витрати партнера на промо\n@[шлях]/delivery_time.csv — середній час доставки\n@[шлях]/acceptance_time.csv — середній час прийняття замовлення\n@[шлях]/cooking_time.csv — середній час приготування\n@[шлях]/courier_waiting.csv — середній час очікування кур'єра\n@[шлях]/courier_to_merchant.csv — середній час шляху кур'єра до закладу\n@[шлях]/courier_to_eater.csv — середній час шляху кур'єра до клієнта\n@[шлях]/rating.csv — середній рейтинг\n@[шлях]/popular_items.csv — популярні позиції (10 найпопулярніших)\n@[шлях]/orders_with_promo.csv — замовлення з промо\n@[шлях]/bolt_plus_orders.csv — замовлення Bolt Plus\n\n!!! прорахуй відсоток замовлень з промо та Bolt Plus від загальної кількості\n@[шлях]/listing.csv — платне просування, ROAS (@[шлях]/ROAS.txt), опиши ефективність\n\nМетрики розбий на блоки. Платне просування — окремий блок.","tips":["Замініть [шлях] на реальні шляхи до CSV файлів","Використовуйте @ для прикріплення — Cursor прочитає автоматично","Якщо немає якоїсь метрики — просто приберіть рядок","Контекстні файли допомагають AI правильно інтерпретувати дані","Не забудьте NDA-обмеження"]},
+{"id":"uc2","cat":"analysis","icon":"🔍","title":"Аналіз причин падіння замовлень","sub":"Діагностика проблем з метриками закладу","time":"15-30 хв","dif":"Початковий","prompt":"Проаналізуй дані по закладу [НАЗВА] за останні [N] тижнів та допоможи зрозуміти, чому впали замовлення.\n\nДані:\n@[шлях]/orders.csv — доставлені замовлення\n@[шлях]/Availability.csv — активність закладу\n@[шлях]/Acceptance.csv — % прийняття замовлень\n@[шлях]/acceptance_time.csv — час прийняття\n@[шлях]/rating.csv — рейтинг\n@[шлях]/Active_users.csv — активні клієнти\n@[шлях]/delivery_time.csv — час доставки\n\nВизнач:\n1. З якого тижня почалось падіння\n2. Які метрики погіршились одночасно\n3. Можливі кореневі причини\n4. Конкретні рекомендації для менеджера\n\nРезультат — HTML-звіт з графіками та висновками.","tips":["Чим більше метрик — тим точніша діагностика","Можна додати порівняння з іншими закладами мережі","Додайте дані по промо — можливо падіння пов'язане з кампаніями"]},
+{"id":"uc3","cat":"analysis","icon":"📈","title":"Порівняльний аналіз закладів мережі","sub":"Бенчмарк між закладами однієї мережі","time":"20-40 хв","dif":"Середній","prompt":"Порівняй ефективність закладів мережі [НАЗВА МЕРЕЖІ] за останні [N] тижнів.\n\nДані (формат: date, entity, value):\n@[шлях]/orders.csv — замовлення\n@[шлях]/net_sales.csv — продажі\n@[шлях]/AOV.csv — середній чек\n@[шлях]/rating.csv — рейтинг\n@[шлях]/delivery_time.csv — час доставки\n@[шлях]/Active_users.csv — активні клієнти\n\nHTML-звіт з:\n1. Таблицею порівняння всіх закладів\n2. Рейтингом від найкращого до найгіршого\n3. Графіками трендів\n4. Рекомендаціями\n5. Кращими практиками від топ-закладів","tips":["Ідеально для підготовки до QBR","Можна попросити кольорове кодування"]},
+{"id":"uc4","cat":"creation","icon":"📑","title":"QBR презентація для партнера","sub":"Квартальний бізнес-огляд","time":"30-45 хв","dif":"Середній","prompt":"Створи QBR презентацію для партнера [НАЗВА МЕРЕЖІ].\n\nКонтекст:\n- Мережа: [кількість] закладів у [МІСТО]\n- Період: Q[N] [РІК]\n- Аудиторія: власник/CEO\n\nДані: @[шлях]/orders.csv, net_sales, AOV, Active_users, new_users, delivery_time, rating, Campaigns_Spend\n\nСтруктура (HTML для друку/PDF):\n1. Титульний слайд\n2. Executive Summary\n3. Фінанси: Net Sales, AOV, QoQ\n4. Замовлення: обсяг, тренд\n5. Клієнти: Active/New Users, Frequency\n6. Операції: Delivery Time, Rating\n7. Маркетинг: витрати, ROAS\n8. Рекомендації та план\n\nДизайн: мінімалістичний, #34D186.","tips":["Агрегуйте тижневі дані по місяцях","QoQ зміни замість WoW","Cmd+P для збереження в PDF"]},
+{"id":"uc5","cat":"creation","icon":"📋","title":"Інтерактивний дашборд для мережі","sub":"Дашборд з фільтрами та живими даними","time":"40-60 хв","dif":"Просунутий","prompt":"Створи інтерактивний HTML-дашборд для мережі [НАЗВА].\n\n- [кількість] закладів у [місто]\n- Дані в Google Sheets як CSV\n- Українська мова\n\nДжерела: @[шлях]/data_sources.json\nФормат: date, entity, value\n\nВимоги:\n1. KPI-картки з WoW зміною\n2. Секції: Фінанси, Замовлення, Доставка, Користувачі, Якість\n3. Графіки Chart.js\n4. Фільтр по закладах\n5. Кнопка оновлення\n6. Топ-10 товарів\n7. Когорти з @[шлях]/glossary.txt\n\nОдин HTML файл, акцент #34D186.","tips":["Google Sheets: Publish to Web -> CSV","CORS? Попросіть Google Apps Script проксі","Оновлюється кнопкою"]},
+{"id":"uc6","cat":"creation","icon":"🧾","title":"Онбординг-гайд для партнера","sub":"HTML-документ з поясненнями","time":"20-30 хв","dif":"Початковий","prompt":"Створи онбординг-гайд для нового партнера Bolt Food.\n\nПартнер: [НАЗВА], кухня: [ТИП], місто: [МІСТО]\n\nГайд:\n1. Як працює Bolt Food\n2. Ключові метрики: Availability, Acceptance Rate, Cooking Time, Rating\n3. Промо-інструменти\n4. Часті помилки\n5. Контакти підтримки\n\nВикористай @context_files/Bolt_Food_Metrics_Glossary.md\nДизайн: дружній, з іконками.","tips":["Не включайте NDA-інформацію","Адаптуйте під тип кухні","Можна додати скріншоти"]},
+{"id":"uc7","cat":"strategy","icon":"🎯","title":"Стратегія зростання для закладу","sub":"План дій на 3 місяці","time":"20-40 хв","dif":"Середній","prompt":"На основі даних по закладу [НАЗВА] розроби стратегію зростання на 3 місяці.\n\nДані: @[шлях] — orders, net_sales, Active_users, new_users, AOV, rating, Availability\n\nВизнач:\n1. Сильні та слабкі сторони\n2. Точки зростання\n3. План: Місяць 1 (quick wins), Місяць 2 (системні), Місяць 3 (масштабування)\n4. KPI targets\n5. Промо-стратегія\n\nHTML з візуалізацією та планом.","tips":["Додайте тип кухні та локацію","Попросіть Impact/Effort пріоритизацію","Додайте дані конкурентів"]},
+{"id":"uc8","cat":"strategy","icon":"💰","title":"Аналіз промо-стратегії","sub":"Оцінка ефективності та ROAS","time":"20-35 хв","dif":"Середній","prompt":"Проаналізуй промо-кампанії для [НАЗВА] та запропонуй оптимізацію.\n\nДані: orders, orders_with_promo, bolt_plus_orders, Campaigns_Spend (Bolt + provider), listing, net_sales, new_users\nROAS: @[шлях]/ROAS.txt\n\nПотрібно:\n1. % замовлень з промо\n2. % Bolt Plus\n3. ROAS тренд\n4. Витрати Bolt vs Partner\n5. Кореляція промо з новими клієнтами\n6. Рекомендації по бюджету\n\nHTML-звіт.","tips":["ROAS > 5 — хороший результат","Порівняйте тижні з/без промо","Зверніть увагу на тренд"]},
+{"id":"uc9","cat":"strategy","icon":"🗺️","title":"Стратегія запуску нового міста","sub":"План виходу на нову локацію","time":"30-45 хв","dif":"Просунутий","prompt":"Розроби стратегію запуску мережі [НАЗВА] у місті [МІСТО].\n\n- Працює в [поточне місто], [N] закладів\n- Дані: @[шлях]/current_data.csv\n- Планується [N] нових закладів\n\nПотрібно:\n1. Аналіз поточних показників\n2. Промо-стратегія на 4 тижні\n3. Цільові KPI\n4. Рекомендації по меню\n5. Типові помилки\n6. Чекліст на 8 тижнів\n\nHTML з чеклістами.","tips":["Додайте Popular Items з існуючих закладів","Врахуйте сезонність","Чеклісти для нових менеджерів"]},
+{"id":"uc10","cat":"content","icon":"✉️","title":"Email партнеру з результатами","sub":"Email з метриками та рекомендаціями","time":"10-15 хв","dif":"Початковий","prompt":"Напиши email для партнера [НАЗВА] з результатами за [МІСЯЦЬ].\n\nДані: orders, net_sales, rating, Active_users\n\nТон: дружній, професійний.\n\nСтруктура:\n1. Привітання (від [Ваше імя], Account Manager)\n2. Ключові результати з MoM зміною\n3. Що пішло добре\n4. Простір для покращення\n5. Наступні кроки\n\nЗвичайний текст, не HTML.","tips":["Починайте з позитивного","Конкретні цифри переконливіші","Завершуйте call-to-action"]},
+{"id":"uc11","cat":"content","icon":"📝","title":"Пропозиція для нового партнера","sub":"Комерційна пропозиція","time":"15-25 хв","dif":"Початковий","prompt":"Створи комерційну пропозицію для ресторану [НАЗВА], кухня: [ТИП], місто: [МІСТО].\n\nРесторан ще не на Bolt Food.\n\n1. Про Bolt Food та аудиторію\n2. Переваги\n3. Як це працює\n4. Приклади успіху (без NDA)\n5. Умови\n6. Наступний крок\n\nHTML для PDF. Тон: переконливий.","tips":["Адаптуйте під тип кухні","Уникайте внутрішніх термінів","Використайте публічні кейси"]},
+{"id":"uc12","cat":"content","icon":"📊","title":"Внутрішній звіт для тіму","sub":"Зведений звіт по портфелю","time":"20-30 хв","dif":"Середній","prompt":"Створи зведений звіт по портфелю за [ПЕРІОД].\n\nДані: @[шлях]/portfolio_summary.csv\n\n1. Executive Summary\n2. Таблиця партнерів з метриками\n3. Кольорове кодування\n4. Топ-3 зростання\n5. Топ-3 потребують уваги\n6. Дії та плани\n7. Ризики\n\nHTML для командного мітингу.","tips":["Для 1:1 з керівником","Додайте фільтри по містах","Кольорове кодування для огляду"]},
+{"id":"uc13","cat":"product","icon":"🧰","title":"Трекер задач по партнерах","sub":"Внутрішній інструмент","time":"30-45 хв","dif":"Середній","prompt":"Створи HTML-трекер для партнерів.\n\nТаблиця: Назва, Місто, Статус, Останній контакт, Наступна дія, Пріоритет\n\n1. Фільтри по статусу та місту\n2. Пошук по назві\n3. Кольорове кодування\n4. Сортування\n5. Дані в localStorage\n6. Експорт в CSV\n\nОдин HTML файл.","tips":["localStorage зберігає дані в браузері","Можна додати нагадування","Для щоденного планування"]},
+{"id":"uc14","cat":"product","icon":"📋","title":"Форма зворотного зв'язку","sub":"Опитування після MBR/QBR","time":"15-20 хв","dif":"Початковий","prompt":"Створи HTML-форму зворотного зв'язку.\n\n1. Оцінка співпраці (1-10)\n2. Що працює добре?\n3. Що покращити?\n4. Оцінка менеджера (1-10)\n5. Задоволеність маркетингом\n6. Потрібні інструменти\n7. NPS (1-10)\n8. Коментарі\n\nЗбереження в localStorage.\nМобільний дизайн.","tips":["Після кожної QBR","Для серйозного збору — Google Forms","Результати можна скопіювати"]},
+{"id":"uc15","cat":"people","icon":"🤝","title":"Підготовка до QBR зустрічі","sub":"План зустрічі з talking points","time":"15-20 хв","dif":"Початковий","prompt":"Підготуй мене до QBR з партнером [НАЗВА].\n\n- [перша/регулярна] зустріч\n- [N] закладів в [місто]\n- Теми: [перелік]\n\nДані: orders, net_sales, rating\n\n1. Agenda (60 хв)\n2. Talking points\n3. Ключові цифри\n4. Складні питання + відповіді\n5. Пропозиції\n6. Follow-up план\n\nТекст для друку.","tips":["Згенеруйте негативні сценарії","Додайте конкурентний контекст","Завершуйте конкретним кроком"]},
+{"id":"uc16","cat":"people","icon":"📚","title":"Онбординг нового менеджера","sub":"Чекліст для нового колеги","time":"20-30 хв","dif":"Початковий","prompt":"Створи онбординг-план для нового Account Manager.\n\n- Починає [дата], місто [МІСТО]\n- Портфель: [N] партнерів\n\n1. Тиждень 1: платформа, метрики, доступи\n2. Тиждень 2: shadowing, огляд портфеля\n3. Тиждень 3-4: перші контакти, перший MBR\n4. Чекліст навичок\n5. Ресурси\n\nHTML з чеклістами.","tips":["Персоналізуйте під досвід","Додайте посилання на документи","Чеклісти — щоб не забути"]},
+{"id":"uc17","cat":"productivity","icon":"📝","title":"Резюме зустрічі з партнером","sub":"Follow-up з action items","time":"5-10 хв","dif":"Початковий","prompt":"Зроби резюме зустрічі.\n\nНотатки: [вставте]\n\n1. Учасники, дата\n2. Ключові теми\n3. Рішення\n4. Action Items з дедлайнами (Bolt + Партнер)\n5. Наступна зустріч\n\nТекст для email. Тон: професійний.","tips":["Відправляйте протягом 24 годин","Action items з дедлайнами","Можна надиктувати нотатки"]},
+{"id":"uc18","cat":"productivity","icon":"📖","title":"База знань по типових ситуаціях","sub":"FAQ для менеджерів","time":"25-40 хв","dif":"Середній","prompt":"Створи FAQ для менеджерів Bolt Food.\n\n1. Операційні: Availability, Acceptance Rate, приготування\n2. Фінансові: комісія, Net vs Gross Sales\n3. Маркетинг: як отримати замовлення, ROI, Listing\n4. Рейтинг: покращення, відгуки\n5. Технічні: Merchant Portal, меню\n\nКоротка + розгорнута відповідь.\nHTML з навігацією та пошуком.","tips":["Поповнюйте після нестандартних ситуацій","Для онбордингу нових менеджерів","Зберігайте на спільному диску"]},
+{"id":"uc19","cat":"productivity","icon":"📅","title":"Тижневий план роботи","sub":"Планування на основі даних","time":"10-15 хв","dif":"Початковий","prompt":"На основі портфеля створи план на тиждень.\n\nДані: @[шлях]/portfolio_summary.csv\n\nПріоритизація:\n- Червоний: падіння >15% або рейтинг <4.0\n- Жовтий: падіння 5-15% або availability <80%\n- Зелений: стабільні\n\nРозклад:\n- Пн: аналітика\n- Вт-Чт: зустрічі (червоні першими)\n- Пт: follow-ups\n\nHTML з чеклістами.","tips":["Оновлюйте щопонеділка","Червоних — завжди першими","Фіксуйте результати"]}
+]
+</script>
+
+<script id="wf-json" type="application/json">
+[
+{"id":1,"title":"Аналіз даних та пошук причин","desc":"Аналіз даних для виявлення патернів, аномалій та кореневих причин.","cat":"analysis","agents":["data-analyst","data-visualization-expert"],"prompt":"Проаналізуй ці дані та допоможи зрозуміти, чому [метрика] змінилась","time":"15-30 хв","dif":"Beginner"},
+{"id":2,"title":"Синтез клієнтських досліджень","desc":"Перетворення зворотного зв'язку та інтерв'ю у персони та аналіз больових точок.","cat":"analysis","agents":["customer-insight-analyst","data-analyst"],"prompt":"Проаналізуй зворотний зв'язок та визнач больові точки і персони","time":"30-45 хв","dif":"Intermediate"},
+{"id":3,"title":"Витяг знань з документів","desc":"Витяг ключової інформації з документів, резюме та бази знань.","cat":"analysis","agents":["document-processor","knowledge-extractor"],"prompt":"Витягни ключову інформацію та створи резюме","time":"15-25 хв","dif":"Beginner"},
+{"id":4,"title":"Професійна презентація","desc":"Презентації рівня McKinsey з чіткою структурою та сильним наративом.","cat":"creation","agents":["presentation-maker","visual-designer","data-visualization-expert"],"prompt":"Створи презентацію про [тему] для [аудиторії]","time":"25-40 хв","dif":"Beginner"},
+{"id":5,"title":"Презентація для Gamma","desc":"Контент для Gamma paste-text з візуальними підказками.","cat":"creation","agents":["presentation-maker","gamma-optimizer"],"prompt":"Створи презентацію для Gamma про [тему]","time":"20-30 хв","dif":"Beginner"},
+{"id":6,"title":"Дизайн воркшопу","desc":"Повні воркшопи з вправами та матеріалами.","cat":"creation","agents":["workshop-exercise-designer","facilitation-guide-generator","visual-designer"],"prompt":"Розроби воркшоп на [тривалість] про [тему]","time":"45-60 хв","dif":"Intermediate"},
+{"id":7,"title":"Документ для друку","desc":"Професійно відформатовані документи для друку.","cat":"creation","agents":["layout-architect","visual-designer"],"prompt":"Створи документ для друку [тип] про [тему]","time":"20-35 хв","dif":"Beginner"},
+{"id":8,"title":"Інтерактивний HTML-гайд","desc":"Інтерактивний HTML з навігацією та стилями.","cat":"creation","agents":["interactive-content-compiler","visual-designer"],"prompt":"Створи інтерактивний HTML-гайд про [тему]","time":"30-45 хв","dif":"Intermediate"},
+{"id":9,"title":"Продуктова стратегія та PRD","desc":"Продуктова стратегія та PRD для розробки.","cat":"strategy","agents":["product-architect","prd-architect","customer-insight-analyst"],"prompt":"Визнач продуктову стратегію та PRD для [ідеї]","time":"45-60 хв","dif":"Intermediate"},
+{"id":10,"title":"Стратегія виходу на ринок","desc":"GTM: позиціонування, ціноутворення, канали, план запуску.","cat":"strategy","agents":["gtm-strategist","brand-architect","copywriter"],"prompt":"Створи GTM стратегію для [продукту]","time":"45-60 хв","dif":"Advanced"},
+{"id":11,"title":"Генерація бізнес-ідей","desc":"Інноваційні ідеї за методологією Thinkertoys.","cat":"strategy","agents":["idea-forge","expert-panel"],"prompt":"Згенеруй бізнес-ідеї для [домену]","time":"30-45 хв","dif":"Beginner"},
+{"id":12,"title":"Аналіз панелі експертів","desc":"Точки зору від експертів з різних доменів.","cat":"strategy","agents":["expert-panel"],"prompt":"Отримай експертні точки зору на [тему]","time":"20-30 хв","dif":"Beginner"},
+{"id":13,"title":"Контент для LinkedIn","desc":"Пости, статті та контент-план для LinkedIn.","cat":"content","agents":["personal-brand-builder","copywriter"],"prompt":"Створи пост для LinkedIn про [тему]","time":"10-20 хв","dif":"Beginner"},
+{"id":14,"title":"Стаття для блогу","desc":"SEO-оптимізовані статті з правильною структурою.","cat":"content","agents":["personal-brand-builder","seo-optimizer"],"prompt":"Напиши статтю про [тему] для [аудиторії]","time":"30-45 хв","dif":"Beginner"},
+{"id":15,"title":"Продаючий текст та лендінг","desc":"Переконливі тексти, лендінги, email-послідовності.","cat":"content","agents":["copywriter","seo-optimizer"],"prompt":"Напиши продаючий текст для [продукту]","time":"25-40 хв","dif":"Intermediate"},
+{"id":16,"title":"Бренд-айдентіка","desc":"Повна бренд-айдентіка з гайдлайнами.","cat":"content","agents":["brand-architect","visual-designer"],"prompt":"Створи бренд-гайдлайни для [компанії]","time":"45-60 хв","dif":"Advanced"},
+{"id":17,"title":"Внутрішній інструмент","desc":"Дашборди, CRM, адмін-панелі.","cat":"product","agents":["internal-tool-builder","prd-architect","database-architect"],"prompt":"Побудуй інструмент для [випадку]","time":"45-90 хв","dif":"Advanced"},
+{"id":18,"title":"Схема бази даних","desc":"Оптимізовані схеми БД.","cat":"product","agents":["database-architect","code-generator"],"prompt":"Спроектуй схему БД для [застосунку]","time":"20-35 хв","dif":"Intermediate"},
+{"id":19,"title":"Форми та опитування","desc":"Розумні форми з валідацією.","cat":"product","agents":["form-generator","expert-panel"],"prompt":"Створи опитування про [тему]","time":"15-25 хв","dif":"Beginner"},
+{"id":20,"title":"Перформанс-рев'ю","desc":"Структурований зворотний зв'язок та план розвитку.","cat":"people","agents":["people-leader-coach","team-template-generator"],"prompt":"Підготуй перформанс-рев'ю для [контекст]","time":"20-30 хв","dif":"Beginner"},
+{"id":21,"title":"Складна розмова","desc":"Коучинг по підходу та формулюванням.","cat":"people","agents":["people-leader-coach"],"prompt":"Підготуй мене до розмови про [ситуацію]","time":"15-25 хв","dif":"Beginner"},
+{"id":22,"title":"Шаблони та OKR","desc":"OKR, трекінг проєктів, статус-апдейти.","cat":"people","agents":["team-template-generator","people-leader-coach"],"prompt":"Створи [шаблон] для команди","time":"15-25 хв","dif":"Beginner"},
+{"id":23,"title":"Резюме зустрічі","desc":"Резюме, екшн-айтеми, фолоу-ап.","cat":"productivity","agents":["meeting-commander"],"prompt":"Зроби резюме зустрічі та витягни екшн-айтеми","time":"10-15 хв","dif":"Beginner"},
+{"id":24,"title":"План навчання","desc":"Персоналізовані плани з матеріалами та вправами.","cat":"productivity","agents":["learning-accelerator","knowledge-extractor"],"prompt":"Створи план навчання для [теми]","time":"25-40 хв","dif":"Beginner"},
+{"id":25,"title":"База знань","desc":"Бази знань, FAQ, документація.","cat":"productivity","agents":["knowledge-base-architect","document-processor"],"prompt":"Створи базу знань для [теми/команди]","time":"30-45 хв","dif":"Intermediate"}
+]
+</script>
+
+<script>
+// =============================================
+// DATA — parsed from JSON (safe from encoding issues)
+// =============================================
+var CAT = {
+    analysis:"Аналітика", creation:"Створення", strategy:"Стратегія",
+    content:"Контент", product:"Продукт", people:"Команда", productivity:"Продуктивність"
+};
+var DIF = { Beginner:"Початковий", Intermediate:"Середній", Advanced:"Просунутий" };
+
+var useCases = JSON.parse(document.getElementById("uc-json").textContent);
+var workflows = JSON.parse(document.getElementById("wf-json").textContent);
+
+/* data loaded from JSON blocks above */
+
+// =============================================
+// HELPERS
+// =============================================
+function esc(str) {
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+function copyText(text, btn) {
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                flashBtn(btn);
+            }).catch(function() {
+                fallbackCopy(text, btn);
+            });
+        } else {
+            fallbackCopy(text, btn);
+        }
+    } catch(e) {
+        fallbackCopy(text, btn);
+    }
+}
+
+function fallbackCopy(text, btn) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); flashBtn(btn); }
+    catch(e) { alert('Не вдалось скопіювати. Виділіть текст вручну.'); }
+    document.body.removeChild(ta);
+}
+
+function flashBtn(btn) {
+    if (!btn) return;
+    var orig = btn.textContent;
+    btn.textContent = 'Скопійовано!';
+    btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
+}
+
+// =============================================
+// RENDER USE CASES
+// =============================================
+function renderUC(filter) {
+    filter = filter || 'all';
+    var grid = document.getElementById('uc-grid');
+    var filtered = filter === 'all' ? useCases : useCases.filter(function(u) { return u.cat === filter; });
+    if (!filtered.length) { grid.innerHTML = '<div class="no-results"><h3>Юзкейси не знайдено</h3></div>'; return; }
+
+    grid.innerHTML = '';
+    filtered.forEach(function(u, idx) {
+        var card = document.createElement('div');
+        card.className = 'uc-card';
+        card.setAttribute('data-uc-id', u.id);
+        card.addEventListener('click', function() { openModal(u.id); });
+
+        var firstLine = u.prompt.split('\n')[0];
+        if (firstLine.length > 80) firstLine = firstLine.substring(0, 80);
+
+        var body = document.createElement('div');
+        body.className = 'card-body';
+        body.innerHTML =
+            '<div class="card-top"><span class="badge ' + esc(u.cat) + '">' + esc(CAT[u.cat]) + '</span></div>' +
+            '<div class="uc-icon">' + u.icon + '</div>' +
+            '<h3>' + esc(u.title) + '</h3>' +
+            '<p class="subtitle">' + esc(u.sub) + '</p>' +
+            '<div class="meta-row">' +
+                '<span class="meta-item">&#9201; ' + esc(u.time) + '</span>' +
+                '<span class="meta-item">&#128202; ' + esc(u.dif) + '</span>' +
+            '</div>' +
+            '<div class="prompt-preview">"' + esc(firstLine) + '..."</div>';
+
+        var btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = 'Відкрити промпт';
+        btn.addEventListener('click', function(e) { e.stopPropagation(); openModal(u.id); });
+        body.appendChild(btn);
+
+        card.appendChild(body);
+        grid.appendChild(card);
+    });
+}
+
+var currentModalPrompt = '';
+
+function openModal(id) {
+    var u = useCases.find(function(x) { return x.id === id; });
+    if (!u) return;
+    currentModalPrompt = u.prompt;
+    document.getElementById('modal-title').textContent = u.icon + ' ' + u.title;
+    document.getElementById('modal-subtitle').textContent = u.sub + '  \u00B7  ' + u.time + '  \u00B7  ' + u.dif;
+    document.getElementById('modal-prompt-text').textContent = u.prompt;
+    var tipsHtml = '<h5>Поради</h5><ul>' + u.tips.map(function(t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>';
+    document.getElementById('modal-tips').innerHTML = tipsHtml;
+    document.getElementById('modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function copyModalPrompt(btn) {
+    copyText(currentModalPrompt, btn);
+}
+
+document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+// =============================================
+// RENDER WORKFLOWS
+// =============================================
+function renderWF(filter, search) {
+    filter = filter || 'all';
+    search = search || '';
+    var grid = document.getElementById('wf-grid');
+    var f = workflows;
+    if (filter !== 'all') f = f.filter(function(w) { return w.cat === filter; });
+    if (search) {
+        var s = search.toLowerCase();
+        f = f.filter(function(w) {
+            return w.title.toLowerCase().indexOf(s) !== -1 ||
+                   w.desc.toLowerCase().indexOf(s) !== -1 ||
+                   w.agents.some(function(a) { return a.toLowerCase().indexOf(s) !== -1; }) ||
+                   w.prompt.toLowerCase().indexOf(s) !== -1;
+        });
+    }
+    if (!f.length) { grid.innerHTML = '<div class="no-results"><h3>Воркфлоуі не знайдено</h3></div>'; return; }
+
+    grid.innerHTML = '';
+    f.forEach(function(w) {
+        var card = document.createElement('div');
+        card.className = 'wf-card';
+
+        var agentTags = w.agents.map(function(a) { return '<span class="agent-tag">@' + esc(a) + '</span>'; }).join('');
+
+        card.innerHTML =
+            '<div class="card-top"><span class="badge ' + esc(w.cat) + '">' + esc(CAT[w.cat]) + '</span></div>' +
+            '<h3>' + esc(w.title) + '</h3>' +
+            '<p class="desc">' + esc(w.desc) + '</p>' +
+            '<div class="meta-row">' +
+                '<span class="meta-item">&#9201; ' + esc(w.time) + '</span>' +
+                '<span class="meta-item">&#128202; ' + esc(DIF[w.dif] || w.dif) + '</span>' +
+            '</div>' +
+            '<div class="agents-row">' + agentTags + '</div>' +
+            '<div class="prompt-preview">"' + esc(w.prompt) + '"</div>';
+
+        var btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = 'Скопіювати промпт';
+        (function(prompt) {
+            btn.addEventListener('click', function() { copyText(prompt, btn); });
+        })(w.prompt);
+
+        card.appendChild(btn);
+        grid.appendChild(card);
+    });
+}
+
+// =============================================
+// EVENT LISTENERS
+// =============================================
+document.querySelectorAll('[data-uc-cat]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('[data-uc-cat]').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        renderUC(btn.getAttribute('data-uc-cat'));
+    });
+});
+document.querySelectorAll('[data-wf-cat]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('[data-wf-cat]').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        renderWF(btn.getAttribute('data-wf-cat'), document.getElementById('search').value);
+    });
+});
+document.getElementById('search').addEventListener('input', function(e) {
+    var cat = document.querySelector('[data-wf-cat].active').getAttribute('data-wf-cat');
+    renderWF(cat, e.target.value);
+});
+
+// Init
+try { renderUC(); renderWF(); } catch(e) { console.error('Init error:', e); }
+</script>
+</body>
+</html>

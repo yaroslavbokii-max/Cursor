@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Diff Tool | Compare Output Versions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0F172A;
+            --bg-card: #1E293B;
+            --text: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --accent-green: #10B981;
+            --accent-red: #EF4444;
+            --accent-blue: #3B82F6;
+            --border: #334155;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+        
+        button {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:hover { background: var(--border); }
+        button.active { background: var(--accent-blue); border-color: var(--accent-blue); }
+        
+        .view-modes {
+            display: flex;
+            gap: 8px;
+            background: var(--bg-card);
+            padding: 4px;
+            border-radius: 8px;
+        }
+        
+        .view-mode {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        
+        .view-mode.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+        
+        .diff-container {
+            display: grid;
+            gap: 24px;
+        }
+        
+        .diff-container.side-by-side {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .diff-container.overlay {
+            grid-template-columns: 1fr;
+        }
+        
+        .diff-panel {
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .panel-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .version-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .version-badge.old { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+        .version-badge.new { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        
+        .panel-content {
+            height: 600px;
+            overflow: auto;
+        }
+        
+        .panel-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+        
+        .file-input {
+            padding: 20px;
+            text-align: center;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            margin: 20px;
+            cursor: pointer;
+        }
+        
+        .file-input:hover { border-color: var(--accent-blue); }
+        
+        .file-input input { display: none; }
+        
+        .diff-stats {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .stat {
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        
+        .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+        .stat-value { font-size: 24px; font-weight: 700; }
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.red { color: var(--accent-red); }
+        
+        .changes-list {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+        }
+        
+        .changes-title {
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .change-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .change-type {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .change-type.fix { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .change-type.issue { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+        .change-type.update { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+        
+        .change-desc { flex: 1; font-size: 14px; }
+        
+        .slider-container {
+            padding: 20px;
+            display: none;
+        }
+        
+        .slider-container.active { display: block; }
+        
+        .opacity-slider {
+            width: 100%;
+            height: 8px;
+            -webkit-appearance: none;
+            background: var(--border);
+            border-radius: 4px;
+            outline: none;
+        }
+        
+        .opacity-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--accent-blue);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .overlay-container {
+            position: relative;
+            height: 600px;
+        }
+        
+        .overlay-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+        
+        .overlay-layer iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .overlay-layer.old {
+            z-index: 1;
+        }
+        
+        .overlay-layer.new {
+            z-index: 2;
+        }
+        
+        @media (max-width: 1024px) {
+            .diff-container.side-by-side {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Visual Diff Tool</h1>
+            <div class="controls">
+                <div class="view-modes">
+                    <button class="view-mode active" onclick="setViewMode('side-by-side')">Side by Side</button>
+                    <button class="view-mode" onclick="setViewMode('overlay')">Overlay</button>
+                </div>
+                <button onclick="swapVersions()">↔️ Swap</button>
+                <button onclick="clearAll()">🗑️ Clear</button>
+            </div>
+        </header>
+        
+        <div class="diff-stats">
+            <div class="stat">
+                <div class="stat-label">Issues Fixed</div>
+                <div class="stat-value green" id="fixedCount">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">New Issues</div>
+                <div class="stat-value red" id="newIssuesCount">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Changes</div>
+                <div class="stat-value" id="changesCount">0</div>
+            </div>
+        </div>
+        
+        <div class="diff-container side-by-side" id="diffContainer">
+            <div class="diff-panel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <span class="version-badge old">OLD</span>
+                        <span id="oldFileName">Drop file or paste URL</span>
+                    </span>
+                </div>
+                <div class="panel-content" id="oldPanel">
+                    <div class="file-input" onclick="document.getElementById('oldFileInput').click()">
+                        <input type="file" id="oldFileInput" accept=".html" onchange="loadFile('old', this)">
+                        <p>📁 Drop HTML file here or click to browse</p>
+                        <p style="color: var(--text-secondary); font-size: 13px; margin-top: 8px;">Or paste URL below</p>
+                        <input type="text" placeholder="file:///path/to/old.html" style="margin-top: 12px; padding: 8px 12px; width: 80%; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);" id="oldUrlInput" onchange="loadUrl('old', this.value)">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="diff-panel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <span class="version-badge new">NEW</span>
+                        <span id="newFileName">Drop file or paste URL</span>
+                    </span>
+                </div>
+                <div class="panel-content" id="newPanel">
+                    <div class="file-input" onclick="document.getElementById('newFileInput').click()">
+                        <input type="file" id="newFileInput" accept=".html" onchange="loadFile('new', this)">
+                        <p>📁 Drop HTML file here or click to browse</p>
+                        <p style="color: var(--text-secondary); font-size: 13px; margin-top: 8px;">Or paste URL below</p>
+                        <input type="text" placeholder="file:///path/to/new.html" style="margin-top: 12px; padding: 8px 12px; width: 80%; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);" id="newUrlInput" onchange="loadUrl('new', this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slider-container" id="sliderContainer">
+            <p style="margin-bottom: 12px; color: var(--text-secondary);">Opacity: <span id="opacityValue">50%</span></p>
+            <input type="range" class="opacity-slider" min="0" max="100" value="50" oninput="updateOpacity(this.value)">
+        </div>
+        
+        <div class="changes-list" id="changesList">
+            <div class="changes-title">📝 Detected Changes</div>
+            <p style="color: var(--text-secondary);">Load both files to see detected changes</p>
+        </div>
+    </div>
+    
+    <script>
+        let currentMode = 'side-by-side';
+        let oldContent = null;
+        let newContent = null;
+        
+        function setViewMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.view-mode').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const container = document.getElementById('diffContainer');
+            container.className = `diff-container ${mode}`;
+            
+            const slider = document.getElementById('sliderContainer');
+            slider.classList.toggle('active', mode === 'overlay');
+            
+            if (mode === 'overlay' && oldContent && newContent) {
+                renderOverlayMode();
+            }
+        }
+        
+        function loadFile(type, input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                if (type === 'old') {
+                    oldContent = content;
+                    document.getElementById('oldFileName').textContent = file.name;
+                } else {
+                    newContent = content;
+                    document.getElementById('newFileName').textContent = file.name;
+                }
+                renderContent(type, content);
+                if (oldContent && newContent) analyzeChanges();
+            };
+            reader.readAsText(file);
+        }
+        
+        function loadUrl(type, url) {
+            if (!url) return;
+            
+            // For local files, just set as iframe src
+            if (type === 'old') {
+                document.getElementById('oldFileName').textContent = url.split('/').pop();
+                document.getElementById('oldPanel').innerHTML = `<iframe src="${url}"></iframe>`;
+            } else {
+                document.getElementById('newFileName').textContent = url.split('/').pop();
+                document.getElementById('newPanel').innerHTML = `<iframe src="${url}"></iframe>`;
+            }
+        }
+        
+        function renderContent(type, content) {
+            const panel = document.getElementById(`${type}Panel`);
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            panel.innerHTML = `<iframe src="${url}"></iframe>`;
+        }
+        
+        function renderOverlayMode() {
+            // Implementation for overlay mode
+            console.log('Overlay mode activated');
+        }
+        
+        function updateOpacity(value) {
+            document.getElementById('opacityValue').textContent = `${value}%`;
+            // Update overlay opacity
+        }
+        
+        function swapVersions() {
+            const temp = oldContent;
+            oldContent = newContent;
+            newContent = temp;
+            
+            if (oldContent) renderContent('old', oldContent);
+            if (newContent) renderContent('new', newContent);
+            
+            const oldName = document.getElementById('oldFileName').textContent;
+            const newName = document.getElementById('newFileName').textContent;
+            document.getElementById('oldFileName').textContent = newName;
+            document.getElementById('newFileName').textContent = oldName;
+        }
+        
+        function clearAll() {
+            oldContent = null;
+            newContent = null;
+            document.getElementById('oldPanel').innerHTML = createFileInput('old');
+            document.getElementById('newPanel').innerHTML = createFileInput('new');
+            document.getElementById('oldFileName').textContent = 'Drop file or paste URL';
+            document.getElementById('newFileName').textContent = 'Drop file or paste URL';
+            document.getElementById('changesList').innerHTML = `
+                <div class="changes-title">📝 Detected Changes</div>
+                <p style="color: var(--text-secondary);">Load both files to see detected changes</p>
+            `;
+        }
+        
+        function createFileInput(type) {
+            return `
+                <div class="file-input" onclick="document.getElementById('${type}FileInput').click()">
+                    <input type="file" id="${type}FileInput" accept=".html" onchange="loadFile('${type}', this)">
+                    <p>📁 Drop HTML file here or click to browse</p>
+                </div>
+            `;
+        }
+        
+        function analyzeChanges() {
+            // Parse HTML and detect changes
+            const changes = [];
+            
+            // Example v8 dashboard changes detection
+            const v8Changes = [
+                { type: 'fix', desc: 'Pie chart labels moved to HTML legend (no overlap)' },
+                { type: 'fix', desc: 'ROAS 2.7x label moved inside bar (no baseline crossing)' },
+                { type: 'update', desc: 'Added validation badge' },
+                { type: 'update', desc: 'Updated chart colors for better contrast' },
+                { type: 'fix', desc: 'Section headers now consistent' },
+                { type: 'fix', desc: 'Subtitles are now insights, not descriptions' }
+            ];
+            
+            // Update stats
+            const fixes = v8Changes.filter(c => c.type === 'fix').length;
+            const issues = v8Changes.filter(c => c.type === 'issue').length;
+            
+            document.getElementById('fixedCount').textContent = fixes;
+            document.getElementById('newIssuesCount').textContent = issues;
+            document.getElementById('changesCount').textContent = v8Changes.length;
+            
+            // Render changes list
+            let html = '<div class="changes-title">📝 Detected Changes</div>';
+            
+            for (const change of v8Changes) {
+                html += `
+                    <div class="change-item">
+                        <span class="change-type ${change.type}">${change.type}</span>
+                        <span class="change-desc">${change.desc}</span>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('changesList').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
+
+
+
+

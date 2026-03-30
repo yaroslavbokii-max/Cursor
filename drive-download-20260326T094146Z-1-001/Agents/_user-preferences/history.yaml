@@ -1,0 +1,37 @@
+# Task History
+# Used for suggesting preferences based on past behavior
+
+tasks:
+  - date: "2026-01-14"
+    task_type: "workshop"
+    task_name: "AIDA Copywriting Workshop"
+    brand: "bolt"
+    content_density: "balanced"
+    audience: "team_lead"
+    quality_score: 94
+    iterations: 2
+    satisfaction: "high"
+    learnings_captured: true
+    
+  - date: "2026-01-13"
+    task_type: "workshop"
+    task_name: "MECE Workshop"
+    brand: "radiant"
+    content_density: "balanced"
+    audience: "team_lead"
+    quality_score: 89
+    iterations: 4
+    satisfaction: "high"
+    learnings_captured: true
+
+# Aggregated stats
+stats:
+  total_tasks: 2
+  avg_quality_score: 91.5
+  avg_iterations: 3
+  most_used_brand: "bolt"
+  most_used_density: "balanced"
+
+
+
+

@@ -1,0 +1,15 @@
+---
+description: Bolt agent stack bundle — where docs and agents live; Databricks & analysis pointers
+alwaysApply: true
+---
+
+# This workspace (Settings bundle)
+
+- Root contains **AGENTS.md** — read it for folder map and conventions.
+- **Agents/** holds orchestration (`Agents/meta/orchestration-agent/`), **data-analyst**, PRD, strategy agents, and **Agents/_templates/** for outputs.
+- **Databricks & QBRs/** — SQL setup: `COLLEAGUE_SETUP_GUIDE.md`; references: `tables-reference.md`, `schema_notes.md`, `analysis-framework.md`.
+- **Promo_Campaigns _  Bolt Food/** — promo / ROAS / cohort notes.
+
+When the user asks for analysis, prefer existing templates in `Agents/_templates/` and metric rigor (totals vs weighted averages) when reconciling with Looker.
+
+When the user asks for Databricks, never assume credentials exist; use `.env` + patterns from the colleague guide.

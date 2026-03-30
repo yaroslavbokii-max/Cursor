@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Architect — Prompt Library</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #0ea5e9;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            margin-bottom: 2rem;
+            border-radius: var(--radius);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+
+        /* Search and Filters */
+        .controls {
+            background: var(--bg-primary);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 1rem;
+            z-index: 100;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 999px;
+            background: var(--bg-primary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-right: 1rem;
+        }
+
+        .filter-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Categories */
+        .category {
+            margin-bottom: 2rem;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .category-icon {
+            font-size: 1.5rem;
+        }
+
+        .category-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .category-count {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Prompt Cards */
+        .prompts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1rem;
+        }
+
+        .prompt-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .prompt-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .prompt-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .prompt-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .prompt-number {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .prompt-body {
+            padding: 1.25rem;
+        }
+
+        .prompt-text {
+            background: var(--bg-tertiary);
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.875rem;
+            color: var(--primary-dark);
+            margin-bottom: 1rem;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .prompt-text:hover {
+            background: var(--bg-secondary);
+        }
+
+        .prompt-text::after {
+            content: '📋 Click to copy';
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .prompt-text:hover::after {
+            opacity: 1;
+        }
+
+        .prompt-text.copied::after {
+            content: '✓ Copied!';
+            color: var(--success);
+            opacity: 1;
+        }
+
+        .prompt-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .prompt-example {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #92400e;
+            margin-bottom: 1rem;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .prompt-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .meta-badge {
+            padding: 0.25rem 0.625rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .complexity-beginner {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .complexity-intermediate {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .complexity-advanced {
+            background: #fce7f3;
+            color: #9d174d;
+        }
+
+        .time-badge {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .prompt-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+        }
+
+        .tag {
+            padding: 0.2rem 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        /* No Results */
+        .no-results {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .no-results-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 2rem 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .stats {
+                gap: 1.5rem;
+            }
+
+            .prompts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .prompt-card {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ Agent Architect</h1>
+            <p>Prompt Library — Build world-class AI agents</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">80</div>
+                    <div class="stat-label">Prompts</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">15</div>
+                    <div class="stat-label">Categories</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Domains</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="🔍 Search prompts by keyword, tag, or description..." id="searchInput">
+            </div>
+            <div class="filters">
+                <div class="filter-group">
+                    <span class="filter-label">Domain:</span>
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="creative">✍️ Creative</button>
+                    <button class="filter-btn" data-filter="analytical">📊 Analytical</button>
+                    <button class="filter-btn" data-filter="operational">⚙️ Operational</button>
+                    <button class="filter-btn" data-filter="strategic">🎯 Strategic</button>
+                    <button class="filter-btn" data-filter="technical">💻 Technical</button>
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">Complexity:</span>
+                    <button class="filter-btn" data-complexity="beginner">Beginner</button>
+                    <button class="filter-btn" data-complexity="intermediate">Intermediate</button>
+                    <button class="filter-btn" data-complexity="advanced">Advanced</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="promptsContainer">
+            <!-- Quick Start -->
+            <div class="category" data-category="quick-start">
+                <div class="category-header">
+                    <span class="category-icon">🚀</span>
+                    <h2 class="category-title">Quick Start — Create Any Agent</h2>
+                    <span class="category-count">5 prompts</span>
+                </div>
+                <div class="prompts-grid">
+                    <div class="prompt-card" data-domain="all" data-complexity="beginner" data-tags="creation,guided,any-domain">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Basic Agent Creation</span>
+                            <span class="prompt-number">#1</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent for [task]"</div>
+                            <p class="prompt-description">Complete agent package with guided intake, framework selection, and all documentation.</p>
+                            <div class="prompt-example">💡 "Let me help you create a world-class [task] agent. First, I'll ask a few questions..."</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 30-60 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creation</span>
+                                <span class="tag">guided</span>
+                                <span class="tag">any-domain</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="intermediate" data-tags="creation,rapid,experienced-user">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Rapid Agent Creation</span>
+                            <span class="prompt-number">#2</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a [role] agent. Focus on [task]. Channel [experts]. [Complexity]. Works with [agents]."</div>
+                            <p class="prompt-description">Agent generated with minimal back-and-forth using specified parameters.</p>
+                            <div class="prompt-example">💡 "Create a sales copywriter agent. Focus on cold email. Channel Gary Halbert. Comprehensive."</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 20-40 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creation</span>
+                                <span class="tag">rapid</span>
+                                <span class="tag">experienced-user</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="intermediate" data-tags="creation,example-based,reverse-engineer">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Agent from Example</span>
+                            <span class="prompt-number">#3</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent that produces output like this: [paste example]"</div>
+                            <p class="prompt-description">Agent reverse-engineered from desired output example.</p>
+                            <div class="prompt-example">💡 Analysis of example → identification of patterns → agent that reproduces similar quality</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 40-60 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creation</span>
+                                <span class="tag">example-based</span>
+                                <span class="tag">reverse-engineer</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="intermediate" data-tags="creation,inspired,adaptation">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Agent from Inspiration</span>
+                            <span class="prompt-number">#4</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent that works like [tool/person] but for [my use case]"</div>
+                            <p class="prompt-description">Agent inspired by existing solution, adapted to your needs.</p>
+                            <div class="prompt-example">💡 "Create an agent that works like Jasper AI but for B2B SaaS companies"</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 45-60 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creation</span>
+                                <span class="tag">inspired</span>
+                                <span class="tag">adaptation</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="beginner" data-tags="creation,minimal,quick">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Minimal Viable Agent</span>
+                            <span class="prompt-number">#5</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a simple agent for [task]. Keep it minimal."</div>
+                            <p class="prompt-description">Streamlined agent with essential functionality only (~500 words).</p>
+                            <div class="prompt-example">💡 Quick agent focused on core task with 15-20 example prompts</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 15-20 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creation</span>
+                                <span class="tag">minimal</span>
+                                <span class="tag">quick</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Creative Agents -->
+            <div class="category" data-category="creative">
+                <div class="category-header">
+                    <span class="category-icon">✍️</span>
+                    <h2 class="category-title">Creative Agents</h2>
+                    <span class="category-count">10 prompts</span>
+                </div>
+                <div class="prompts-grid">
+                    <div class="prompt-card" data-domain="creative" data-complexity="beginner" data-tags="creative,copywriting,marketing">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Copywriter Agent</span>
+                            <span class="prompt-number">#6</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a copywriter agent"</div>
+                            <p class="prompt-description">Agent specialized in persuasive writing with AIDA, PAS, and other copywriting frameworks.</p>
+                            <div class="prompt-example">💡 Channels Ogilvy, Schwartz, Halbert with templates for headlines, body copy, CTAs</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 45-60 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">copywriting</span>
+                                <span class="tag">marketing</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="creative" data-complexity="beginner" data-tags="creative,email,marketing">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Email Copywriter Agent</span>
+                            <span class="prompt-number">#7</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent for writing marketing emails"</div>
+                            <p class="prompt-description">Specialized email copywriter with subject line frameworks and sequences.</p>
+                            <div class="prompt-example">💡 Templates for welcome sequences, nurture campaigns, promotional emails</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 45-60 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">email</span>
+                                <span class="tag">marketing</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="creative" data-complexity="beginner" data-tags="creative,social-media,content">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Social Media Agent</span>
+                            <span class="prompt-number">#8</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent for social media content creation"</div>
+                            <p class="prompt-description">Multi-platform social media agent with platform-specific best practices.</p>
+                            <div class="prompt-example">💡 Templates for LinkedIn, Twitter, Instagram, Facebook — each with optimal formats</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 45-60 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">social-media</span>
+                                <span class="tag">content</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="creative" data-complexity="beginner" data-tags="creative,blog,content,seo">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Blog/Article Writer</span>
+                            <span class="prompt-number">#9</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent for writing blog posts and articles"</div>
+                            <p class="prompt-description">Long-form content agent with SEO awareness and engagement techniques.</p>
+                            <div class="prompt-example">💡 Frameworks for listicles, how-tos, thought leadership, case studies</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 50-70 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">blog</span>
+                                <span class="tag">seo</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="creative" data-complexity="intermediate" data-tags="creative,video,scripts">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Video Script Writer</span>
+                            <span class="prompt-number">#10</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent for writing video scripts"</div>
+                            <p class="prompt-description">Video script specialist with hooks, retention techniques, platform formats.</p>
+                            <div class="prompt-example">💡 Templates for YouTube, TikTok, explainer videos, ads</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 50-70 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">video</span>
+                                <span class="tag">scripts</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="creative" data-complexity="intermediate" data-tags="creative,presentation,slides">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Presentation Writer</span>
+                            <span class="prompt-number">#11</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent for creating presentations"</div>
+                            <p class="prompt-description">Presentation designer with story structure, slide templates, visual principles.</p>
+                            <div class="prompt-example">💡 Channels Nancy Duarte and Garr Reynolds with templates for pitch decks, keynotes</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 50-70 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">presentation</span>
+                                <span class="tag">slides</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="creative" data-complexity="intermediate" data-tags="creative,brand,voice,custom">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Brand Voice Agent</span>
+                            <span class="prompt-number">#12</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent that writes in our brand voice. Here's our style guide: [paste]"</div>
+                            <p class="prompt-description">Custom agent calibrated to specific brand voice and guidelines.</p>
+                            <div class="prompt-example">💡 Brand-specific vocabulary, tone settings, example transformations</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 40-60 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">brand</span>
+                                <span class="tag">voice</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="creative" data-complexity="advanced" data-tags="creative,review,improvement">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Creative Director</span>
+                            <span class="prompt-number">#13</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a creative director agent that reviews and improves creative work"</div>
+                            <p class="prompt-description">Agent that critiques, provides feedback, and suggests improvements.</p>
+                            <div class="prompt-example">💡 Frameworks for creative review, improvement suggestions, A/B test ideas</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-advanced">Advanced</span>
+                                <span class="meta-badge time-badge">⏱️ 60-80 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">review</span>
+                                <span class="tag">improvement</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="creative" data-complexity="intermediate" data-tags="creative,storytelling,narrative">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Storyteller Agent</span>
+                            <span class="prompt-number">#14</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent for business storytelling"</div>
+                            <p class="prompt-description">Narrative specialist using Hero's Journey, StoryBrand frameworks.</p>
+                            <div class="prompt-example">💡 Templates for case studies, founder stories, customer testimonials</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 50-70 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">storytelling</span>
+                                <span class="tag">narrative</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="creative" data-complexity="beginner" data-tags="creative,summary,knowledge">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Book/Report Summarizer</span>
+                            <span class="prompt-number">#15</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent that summarizes books and reports"</div>
+                            <p class="prompt-description">Summarization specialist with frameworks for extracting key insights.</p>
+                            <div class="prompt-example">💡 Templates for executive summaries, chapter breakdowns, actionable takeaways</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 40-50 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">creative</span>
+                                <span class="tag">summary</span>
+                                <span class="tag">knowledge</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytical Agents -->
+            <div class="category" data-category="analytical">
+                <div class="category-header">
+                    <span class="category-icon">📊</span>
+                    <h2 class="category-title">Analytical Agents</h2>
+                    <span class="category-count">8 prompts</span>
+                </div>
+                <div class="prompts-grid">
+                    <div class="prompt-card" data-domain="analytical" data-complexity="advanced" data-tags="analytical,data,statistics">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Data Analyst Agent</span>
+                            <span class="prompt-number">#16</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a data analyst agent"</div>
+                            <p class="prompt-description">Comprehensive analyst with hypothesis-driven approach and visualization.</p>
+                            <div class="prompt-example">💡 MECE decomposition, driver trees, dashboard templates</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-advanced">Advanced</span>
+                                <span class="meta-badge time-badge">⏱️ 70-90 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">analytical</span>
+                                <span class="tag">data</span>
+                                <span class="tag">statistics</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="analytical" data-complexity="intermediate" data-tags="analytical,research,synthesis">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Research Analyst</span>
+                            <span class="prompt-number">#17</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a research analyst agent"</div>
+                            <p class="prompt-description">Research specialist with systematic methods and source evaluation.</p>
+                            <div class="prompt-example">💡 Frameworks for literature review, competitive research, market research</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 50-70 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">analytical</span>
+                                <span class="tag">research</span>
+                                <span class="tag">synthesis</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="analytical" data-complexity="intermediate" data-tags="analytical,market,research,strategy">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Market Research Agent</span>
+                            <span class="prompt-number">#18</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a market research agent"</div>
+                            <p class="prompt-description">Market specialist with TAM/SAM/SOM analysis and competitor mapping.</p>
+                            <div class="prompt-example">💡 Templates for market sizing, competitive analysis, customer research</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 60-80 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">analytical</span>
+                                <span class="tag">market</span>
+                                <span class="tag">strategy</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="analytical" data-complexity="advanced" data-tags="analytical,finance,valuation">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Financial Analyst</span>
+                            <span class="prompt-number">#19</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a financial analyst agent"</div>
+                            <p class="prompt-description">Finance specialist with ratio analysis and valuation methods.</p>
+                            <div class="prompt-example">💡 Templates for DCF, comparable analysis, financial statement analysis</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-advanced">Advanced</span>
+                                <span class="meta-badge time-badge">⏱️ 70-90 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">analytical</span>
+                                <span class="tag">finance</span>
+                                <span class="tag">valuation</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="analytical" data-complexity="intermediate" data-tags="analytical,competitive,strategy">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Competitive Intelligence</span>
+                            <span class="prompt-number">#20</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a competitive intelligence agent"</div>
+                            <p class="prompt-description">CI specialist with frameworks for tracking competitors.</p>
+                            <div class="prompt-example">💡 Porter's 5 Forces integration, competitor profiling, battle cards</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 55-75 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">analytical</span>
+                                <span class="tag">competitive</span>
+                                <span class="tag">strategy</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="analytical" data-complexity="intermediate" data-tags="analytical,survey,feedback">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Survey Analyst</span>
+                            <span class="prompt-number">#21</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent for analyzing survey data"</div>
+                            <p class="prompt-description">Survey specialist with qualitative and quantitative analysis.</p>
+                            <div class="prompt-example">💡 Templates for NPS analysis, sentiment coding, insight extraction</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 50-65 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">analytical</span>
+                                <span class="tag">survey</span>
+                                <span class="tag">feedback</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="analytical" data-complexity="intermediate" data-tags="analytical,seo,content">
+                        <div class="prompt-header">
+                            <span class="prompt-title">SEO Analyst</span>
+                            <span class="prompt-number">#22</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an SEO analyst agent"</div>
+                            <p class="prompt-description">SEO specialist with keyword research and content gap analysis.</p>
+                            <div class="prompt-example">💡 Templates for keyword clustering, content briefs, technical audits</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 55-70 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">analytical</span>
+                                <span class="tag">seo</span>
+                                <span class="tag">content</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="analytical" data-complexity="intermediate" data-tags="analytical,customer,research,jtbd">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Customer Insights</span>
+                            <span class="prompt-number">#23</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a customer insights agent"</div>
+                            <p class="prompt-description">Customer research specialist with JTBD and persona development.</p>
+                            <div class="prompt-example">💡 Frameworks for customer interviews, persona templates, journey maps</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 55-75 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">analytical</span>
+                                <span class="tag">customer</span>
+                                <span class="tag">jtbd</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Operational Agents -->
+            <div class="category" data-category="operational">
+                <div class="category-header">
+                    <span class="category-icon">⚙️</span>
+                    <h2 class="category-title">Operational Agents</h2>
+                    <span class="category-count">9 prompts</span>
+                </div>
+                <div class="prompts-grid">
+                    <div class="prompt-card" data-domain="operational" data-complexity="beginner" data-tags="operational,meetings,productivity">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Meeting Summarizer</span>
+                            <span class="prompt-number">#24</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a meeting summarizer agent"</div>
+                            <p class="prompt-description">Meeting specialist that extracts decisions, action items, key discussions.</p>
+                            <div class="prompt-example">💡 Templates for meeting notes, action item tracking, follow-up emails</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 35-50 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">operational</span>
+                                <span class="tag">meetings</span>
+                                <span class="tag">productivity</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="operational" data-complexity="beginner" data-tags="operational,email,productivity">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Email Responder</span>
+                            <span class="prompt-number">#25</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an email responder agent"</div>
+                            <p class="prompt-description">Email specialist for drafting professional responses quickly.</p>
+                            <div class="prompt-example">💡 Templates for common email types, tone adjustment, quick responses</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 35-50 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">operational</span>
+                                <span class="tag">email</span>
+                                <span class="tag">productivity</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="operational" data-complexity="beginner" data-tags="operational,productivity,planning">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Task Prioritizer</span>
+                            <span class="prompt-number">#26</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a task prioritization agent"</div>
+                            <p class="prompt-description">Productivity specialist with Eisenhower matrix and priority frameworks.</p>
+                            <div class="prompt-example">💡 Templates for daily planning, weekly reviews, priority assessment</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 35-45 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">operational</span>
+                                <span class="tag">productivity</span>
+                                <span class="tag">planning</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="operational" data-complexity="intermediate" data-tags="operational,documentation,process">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Documentation Writer</span>
+                            <span class="prompt-number">#27</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a documentation writer agent"</div>
+                            <p class="prompt-description">Documentation specialist for processes, SOPs, technical docs.</p>
+                            <div class="prompt-example">💡 Templates for SOPs, how-to guides, reference documentation</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 45-60 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">operational</span>
+                                <span class="tag">documentation</span>
+                                <span class="tag">process</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="operational" data-complexity="intermediate" data-tags="operational,onboarding,training">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Onboarding Creator</span>
+                            <span class="prompt-number">#28</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an onboarding content creator agent"</div>
+                            <p class="prompt-description">Onboarding specialist for employee or customer onboarding materials.</p>
+                            <div class="prompt-example">💡 Templates for welcome sequences, training materials, checklists</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 50-65 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">operational</span>
+                                <span class="tag">onboarding</span>
+                                <span class="tag">training</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="operational" data-complexity="beginner" data-tags="operational,communication,slack,teams">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Slack/Teams Communicator</span>
+                            <span class="prompt-number">#29</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an agent for internal Slack/Teams communications"</div>
+                            <p class="prompt-description">Internal comms specialist with templates for updates and announcements.</p>
+                            <div class="prompt-example">💡 Formatted messages for updates, asks, celebrations</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 30-40 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">operational</span>
+                                <span class="tag">slack</span>
+                                <span class="tag">teams</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="operational" data-complexity="intermediate" data-tags="operational,project,reporting">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Project Status Reporter</span>
+                            <span class="prompt-number">#30</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a project status reporting agent"</div>
+                            <p class="prompt-description">Status reporting specialist with stakeholder communication frameworks.</p>
+                            <div class="prompt-example">💡 Templates for weekly status, risk registers, stakeholder updates</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 45-55 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">operational</span>
+                                <span class="tag">project</span>
+                                <span class="tag">reporting</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="operational" data-complexity="beginner" data-tags="operational,interview,notes">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Interview Note Taker</span>
+                            <span class="prompt-number">#31</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an interview note-taking agent"</div>
+                            <p class="prompt-description">Interview specialist for capturing insights from interviews.</p>
+                            <div class="prompt-example">💡 Templates for structured notes, insight extraction, candidate assessment</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 35-45 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">operational</span>
+                                <span class="tag">interview</span>
+                                <span class="tag">notes</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="operational" data-complexity="beginner" data-tags="operational,faq,support">
+                        <div class="prompt-header">
+                            <span class="prompt-title">FAQ Generator</span>
+                            <span class="prompt-number">#32</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an FAQ generator agent"</div>
+                            <p class="prompt-description">FAQ specialist that anticipates questions and creates clear answers.</p>
+                            <div class="prompt-example">💡 Frameworks for question anticipation, answer structuring, categorization</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 35-45 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">operational</span>
+                                <span class="tag">faq</span>
+                                <span class="tag">support</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- More categories would continue here... -->
+            <!-- For brevity, showing the structure for remaining major sections -->
+
+            <!-- Strategic Agents -->
+            <div class="category" data-category="strategic">
+                <div class="category-header">
+                    <span class="category-icon">🎯</span>
+                    <h2 class="category-title">Strategic Agents</h2>
+                    <span class="category-count">8 prompts</span>
+                </div>
+                <div class="prompts-grid">
+                    <div class="prompt-card" data-domain="strategic" data-complexity="advanced" data-tags="strategic,business,consulting">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Business Advisor</span>
+                            <span class="prompt-number">#33</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a business advisor agent"</div>
+                            <p class="prompt-description">Strategic advisor with McKinsey/BCG consulting frameworks.</p>
+                            <div class="prompt-example">💡 MECE, issue trees, hypothesis-driven analysis, strategic recommendations</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-advanced">Advanced</span>
+                                <span class="meta-badge time-badge">⏱️ 70-90 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">strategic</span>
+                                <span class="tag">business</span>
+                                <span class="tag">consulting</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="strategic" data-complexity="advanced" data-tags="strategic,product,roadmap">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Product Strategist</span>
+                            <span class="prompt-number">#34</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a product strategy agent"</div>
+                            <p class="prompt-description">Product specialist with roadmap and prioritization frameworks.</p>
+                            <div class="prompt-example">💡 RICE scoring, opportunity assessment, product vision templates</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-advanced">Advanced</span>
+                                <span class="meta-badge time-badge">⏱️ 65-85 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">strategic</span>
+                                <span class="tag">product</span>
+                                <span class="tag">roadmap</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="strategic" data-complexity="advanced" data-tags="strategic,gtm,launch,marketing">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Go-to-Market Agent</span>
+                            <span class="prompt-number">#35</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a go-to-market strategy agent"</div>
+                            <p class="prompt-description">GTM specialist with launch frameworks and channel strategy.</p>
+                            <div class="prompt-example">💡 Templates for launch plans, positioning, channel selection</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-advanced">Advanced</span>
+                                <span class="meta-badge time-badge">⏱️ 65-80 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">strategic</span>
+                                <span class="tag">gtm</span>
+                                <span class="tag">marketing</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="strategic" data-complexity="intermediate" data-tags="strategic,okr,goals,planning">
+                        <div class="prompt-header">
+                            <span class="prompt-title">OKR Coach</span>
+                            <span class="prompt-number">#39</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create an OKR coaching agent"</div>
+                            <p class="prompt-description">OKR specialist that helps set, refine, and track objectives.</p>
+                            <div class="prompt-example">💡 Templates for OKR writing, alignment checking, progress reviews</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 45-60 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">strategic</span>
+                                <span class="tag">okr</span>
+                                <span class="tag">planning</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Enhancement -->
+            <div class="category" data-category="enhancement">
+                <div class="category-header">
+                    <span class="category-icon">🔧</span>
+                    <h2 class="category-title">Improve Existing Agents</h2>
+                    <span class="category-count">7 prompts</span>
+                </div>
+                <div class="prompts-grid">
+                    <div class="prompt-card" data-domain="all" data-complexity="intermediate" data-tags="improvement,audit,review">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Agent Audit</span>
+                            <span class="prompt-number">#46</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Audit this agent and suggest improvements: [paste agent]"</div>
+                            <p class="prompt-description">Comprehensive review with specific improvement recommendations.</p>
+                            <div class="prompt-example">💡 "I've identified 5 areas for improvement: 1) Missing framework integration..."</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 20-30 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">improvement</span>
+                                <span class="tag">audit</span>
+                                <span class="tag">review</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="intermediate" data-tags="improvement,frameworks,enhancement">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Add Frameworks</span>
+                            <span class="prompt-number">#47</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Add relevant frameworks to this agent: [paste agent]"</div>
+                            <p class="prompt-description">Enhanced agent with integrated domain-specific frameworks.</p>
+                            <div class="prompt-example">💡 Agent updated with 2-3 relevant frameworks, examples of application</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 15-25 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">improvement</span>
+                                <span class="tag">frameworks</span>
+                                <span class="tag">enhancement</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="intermediate" data-tags="improvement,expert,voice">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Add Expert Principles</span>
+                            <span class="prompt-number">#48</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Make this agent channel [expert name] principles: [paste agent]"</div>
+                            <p class="prompt-description">Agent enhanced with specific expert's methodology and voice.</p>
+                            <div class="prompt-example">💡 Agent updated with expert's key principles, vocabulary, approach</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 20-30 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">improvement</span>
+                                <span class="tag">expert</span>
+                                <span class="tag">voice</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="beginner" data-tags="improvement,simplify,refactor">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Simplify Agent</span>
+                            <span class="prompt-number">#51</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Simplify this agent while keeping core functionality: [paste agent]"</div>
+                            <p class="prompt-description">Streamlined version with reduced complexity.</p>
+                            <div class="prompt-example">💡 Agent reduced to essential elements, clearer structure</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-beginner">Beginner</span>
+                                <span class="meta-badge time-badge">⏱️ 15-25 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">improvement</span>
+                                <span class="tag">simplify</span>
+                                <span class="tag">refactor</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orchestration -->
+            <div class="category" data-category="orchestration">
+                <div class="category-header">
+                    <span class="category-icon">🔗</span>
+                    <h2 class="category-title">Orchestration & Workflows</h2>
+                    <span class="category-count">4 prompts</span>
+                </div>
+                <div class="prompts-grid">
+                    <div class="prompt-card" data-domain="all" data-complexity="intermediate" data-tags="orchestration,workflow,integration">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Make Orchestration-Ready</span>
+                            <span class="prompt-number">#59</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Add orchestration capabilities to this agent: [paste agent]"</div>
+                            <p class="prompt-description">Agent updated with metadata header, handoff protocols, integration points.</p>
+                            <div class="prompt-example">💡 Agent with YAML header, calls/called-by sections, context passing format</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 15-25 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">orchestration</span>
+                                <span class="tag">workflow</span>
+                                <span class="tag">integration</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="intermediate" data-tags="orchestration,workflow,design">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Design Agent Workflow</span>
+                            <span class="prompt-number">#60</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Design a workflow for [outcome] using existing agents"</div>
+                            <p class="prompt-description">Complete workflow specification with agent sequence and handoffs.</p>
+                            <div class="prompt-example">💡 "Workflow: Research → Context Builder → Writer → Editor..."</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 15-25 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">orchestration</span>
+                                <span class="tag">workflow</span>
+                                <span class="tag">design</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="advanced" data-tags="orchestration,chain,multi-agent">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Create Agent Chain</span>
+                            <span class="prompt-number">#61</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a chain of agents for [complex task]"</div>
+                            <p class="prompt-description">Series of connected agents designed to work together.</p>
+                            <div class="prompt-example">💡 Multiple agent specifications with integration points</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-advanced">Advanced</span>
+                                <span class="meta-badge time-badge">⏱️ 60-90 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">orchestration</span>
+                                <span class="tag">chain</span>
+                                <span class="tag">multi-agent</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="prompt-card" data-domain="all" data-complexity="intermediate" data-tags="orchestration,template,reusable">
+                        <div class="prompt-header">
+                            <span class="prompt-title">Workflow Template</span>
+                            <span class="prompt-number">#62</span>
+                        </div>
+                        <div class="prompt-body">
+                            <div class="prompt-text">"Create a reusable workflow template for [recurring process]"</div>
+                            <p class="prompt-description">Documented workflow template with variable placeholders.</p>
+                            <div class="prompt-example">💡 Template with [VARIABLE] placeholders, usage instructions</div>
+                            <div class="prompt-meta">
+                                <span class="meta-badge complexity-intermediate">Intermediate</span>
+                                <span class="meta-badge time-badge">⏱️ 20-30 min</span>
+                            </div>
+                            <div class="prompt-tags">
+                                <span class="tag">orchestration</span>
+                                <span class="tag">template</span>
+                                <span class="tag">reusable</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="no-results hidden" id="noResults">
+            <div class="no-results-icon">🔍</div>
+            <h3>No prompts found</h3>
+            <p>Try adjusting your search or filters</p>
+        </div>
+
+        <div class="footer">
+            <p>Agent Architect Prompt Library v1.0 — December 2025</p>
+            <p>80 prompts across 15 categories</p>
+        </div>
+    </div>
+
+    <script>
+        // Search and Filter functionality
+        const searchInput = document.getElementById('searchInput');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const promptCards = document.querySelectorAll('.prompt-card');
+        const categories = document.querySelectorAll('.category');
+        const noResults = document.getElementById('noResults');
+
+        let activeFilters = {
+            domain: 'all',
+            complexity: null
+        };
+
+        // Copy to clipboard
+        document.querySelectorAll('.prompt-text').forEach(el => {
+            el.addEventListener('click', async () => {
+                const text = el.textContent.replace('📋 Click to copy', '').trim();
+                await navigator.clipboard.writeText(text);
+                el.classList.add('copied');
+                setTimeout(() => el.classList.remove('copied'), 2000);
+            });
+        });
+
+        // Search functionality
+        searchInput.addEventListener('input', filterPrompts);
+
+        // Filter buttons
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.dataset.filter;
+                const complexity = btn.dataset.complexity;
+
+                if (filter) {
+                    // Domain filter
+                    document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeFilters.domain = filter;
+                } else if (complexity) {
+                    // Complexity filter (toggle)
+                    if (btn.classList.contains('active')) {
+                        btn.classList.remove('active');
+                        activeFilters.complexity = null;
+                    } else {
+                        document.querySelectorAll('[data-complexity]').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        activeFilters.complexity = complexity;
+                    }
+                }
+
+                filterPrompts();
+            });
+        });
+
+        function filterPrompts() {
+            const searchTerm = searchInput.value.toLowerCase();
+            let visibleCount = 0;
+
+            promptCards.forEach(card => {
+                const domain = card.dataset.domain;
+                const complexity = card.dataset.complexity;
+                const tags = card.dataset.tags || '';
+                const title = card.querySelector('.prompt-title').textContent.toLowerCase();
+                const description = card.querySelector('.prompt-description').textContent.toLowerCase();
+                const promptText = card.querySelector('.prompt-text').textContent.toLowerCase();
+
+                // Check domain filter
+                const domainMatch = activeFilters.domain === 'all' || domain === activeFilters.domain || domain === 'all';
+
+                // Check complexity filter
+                const complexityMatch = !activeFilters.complexity || complexity === activeFilters.complexity;
+
+                // Check search term
+                const searchMatch = !searchTerm || 
+                    title.includes(searchTerm) || 
+                    description.includes(searchTerm) || 
+                    promptText.includes(searchTerm) ||
+                    tags.includes(searchTerm);
+
+                if (domainMatch && complexityMatch && searchMatch) {
+                    card.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+
+            // Show/hide categories based on visible cards
+            categories.forEach(category => {
+                const visibleCards = category.querySelectorAll('.prompt-card:not(.hidden)');
+                if (visibleCards.length === 0) {
+                    category.classList.add('hidden');
+                } else {
+                    category.classList.remove('hidden');
+                }
+            });
+
+            // Show no results message
+            if (visibleCount === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
+

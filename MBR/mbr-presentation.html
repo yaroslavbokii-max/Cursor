@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MBR — Bolt Food Style</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bolt-green: #00D166;
+      --bolt-green-dark: #00a852;
+      --white: #ffffff;
+      --gray-100: #f5f5f5;
+      --gray-800: #2d2d2d;
+      --gray-600: #6b7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; font-family: 'Nunito', system-ui, sans-serif; background: var(--white); color: var(--gray-800); }
+    .deck {
+      height: 100%;
+      display: flex;
+      scroll-snap-type: x mandatory;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+    }
+    .slide {
+      flex: 0 0 100%;
+      height: 100%;
+      scroll-snap-align: start;
+      padding: 48px 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 100%;
+    }
+    .slide-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--bolt-green);
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+    .slide-subtitle {
+      font-size: 1rem;
+      color: var(--gray-600);
+      margin-bottom: 32px;
+      max-width: 720px;
+    }
+    /* First slide */
+    .slide--cover {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .slide--cover .logo {
+      width: 220px;
+      height: auto;
+      margin-bottom: 32px;
+    }
+    .slide--cover .cover-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--gray-800);
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .slide--cover .cover-sub {
+      font-size: 1.25rem;
+      color: var(--bolt-green);
+      font-weight: 700;
+    }
+    /* Tables */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 640px;
+      font-size: 0.95rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    th {
+      font-weight: 700;
+      color: var(--bolt-green);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    tr:last-child td { border-bottom: none; }
+    .metric-row { font-weight: 600; }
+    .positive { color: var(--bolt-green); }
+    .negative { color: #dc2626; }
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--bolt-green);
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    ul.simple-list {
+      list-style: none;
+      max-width: 640px;
+    }
+    ul.simple-list li {
+      padding: 10px 0;
+      padding-left: 24px;
+      position: relative;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    ul.simple-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--bolt-green);
+    }
+    .highlight-box {
+      background: var(--gray-100);
+      border-left: 4px solid var(--bolt-green);
+      padding: 20px 24px;
+      margin: 16px 0;
+      max-width: 640px;
+      border-radius: 0 8px 8px 0;
+    }
+    .highlight-box strong { color: var(--bolt-green); }
+    .nav-hint {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      font-size: 0.8rem;
+      color: var(--gray-600);
+    }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; max-width: 900px; }
+    .chart-wrap { position: relative; height: 280px; max-width: 720px; margin: 16px 0; }
+    .chart-wrap--tall { height: 320px; }
+    .chart-wrap--wide { max-width: 800px; }
+    .slide-content { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+    .slide .slide-title { margin-bottom: 8px; }
+    .slide .slide-subtitle { margin-bottom: 16px; }
+    .big-number { font-size: 3rem; font-weight: 800; color: var(--bolt-green); line-height: 1; margin: 8px 0; }
+    .big-number--red { color: #dc2626; }
+    .legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+    @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } .slide { padding: 32px 24px; } .chart-wrap { height: 240px; } }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <!-- Slide 1: Cover -->
+    <section class="slide slide--cover">
+      <img src="assets/bolt-food-logo.png" alt="Bolt Food" class="logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+      <span class="cover-logo-text" style="display:none; font-size:2.5rem; font-weight:800; color:var(--bolt-green); margin-bottom:32px;">Bolt Food</span>
+      <h1 class="cover-title">Monthly Business Review</h1>
+      <p class="cover-sub">March 2026</p>
+    </section>
+
+    <!-- Slide 2: Biggest win — Activation cost share -->
+    <section class="slide">
+      <div class="slide-content">
+        <h2 class="slide-title">Biggest win — Activation cost share</h2>
+        <p class="slide-subtitle">Cost share with top brands = extra money for reinvestment.</p>
+        <div class="chart-wrap">
+          <canvas id="chartActivation"></canvas>
+        </div>
+        <div class="highlight-box">
+          <strong>Win:</strong> Peaks at 38.91% — steady participation from top brands driving reinvestment.
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: Total ULC cost share -->
+    <section class="slide">
+      <div class="slide-content">
+        <h2 class="slide-title">Total ULC cost share</h2>
+        <p class="slide-subtitle">Ukraine — Bolt vs provider spend & cost share %.</p>
+        <div class="chart-wrap chart-wrap--tall">
+          <canvas id="chartULC"></canvas>
+        </div>
+        <div class="chart-wrap" style="height: 180px;">
+          <canvas id="chartULCpercent"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: PPC & Availability -->
+    <section class="slide">
+      <div class="slide-content">
+        <h2 class="slide-title">PPC & Availability</h2>
+        <p class="slide-subtitle">Business coming back after a hard winter — better operation.</p>
+        <div class="chart-wrap chart-wrap--tall">
+          <canvas id="chartAvailability"></canvas>
+        </div>
+        <div class="highlight-box">
+          <span class="legend-dot" style="background: var(--bolt-green);"></span><strong>Availability</strong> 77.1% in Mar · <span class="legend-dot" style="background: #94a3b8;"></span><strong>Closure rate</strong> down to 1.9% — clear recovery.
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: Sponsored listing -->
+    <section class="slide">
+      <div class="slide-content">
+        <h2 class="slide-title">Sponsored listing</h2>
+        <p class="slide-subtitle">Amazing results — high overachievement of targets.</p>
+        <div class="chart-wrap chart-wrap--wide">
+          <canvas id="chartSponsored"></canvas>
+        </div>
+        <div class="two-col" style="max-width: 480px; margin-top: 8px;">
+          <div><span class="big-number">153%</span><br>Jan vs target</div>
+          <div><span class="big-number">293%</span><br>Feb vs target</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6: Bolt+ -->
+    <section class="slide">
+      <div class="slide-content">
+        <h2 class="slide-title">Bolt+</h2>
+        <p class="slide-subtitle">Bolt Plus enrolled provider GMV share over time.</p>
+        <div class="chart-wrap chart-wrap--tall">
+          <canvas id="chartBoltPlus"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 7: To improve -->
+    <section class="slide">
+      <div class="slide-content">
+        <h2 class="slide-title">To improve this month</h2>
+        <p class="slide-subtitle">Feb 2026 vs target — focus areas.</p>
+        <div class="chart-wrap chart-wrap--tall chart-wrap--wide">
+          <canvas id="chartToImprove"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 8: Churn -->
+    <section class="slide">
+      <div class="slide-content">
+        <h2 class="slide-title">Merchant churn</h2>
+        <p class="slide-subtitle">Concerning upward trend — needs immediate attention.</p>
+        <div class="chart-wrap chart-wrap--tall">
+          <canvas id="chartChurn"></canvas>
+        </div>
+        <div class="highlight-box" style="border-left-color: #dc2626;">
+          <strong>Trend:</strong> Churn grew from 243 (Sep) to 515 (Feb). Action plan needed.
+        </div>
+      </div>
+    </section>
+  </div>
+  <p class="nav-hint">← → or swipe to navigate</p>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const BOLT_GREEN = '#00D166';
+    const BOLT_DARK = '#00a852';
+    const GRAY = '#94a3b8';
+    const RED = '#dc2626';
+    const fontFamily = "'Nunito', system-ui, sans-serif";
+
+    Chart.defaults.font.family = fontFamily;
+    Chart.defaults.color = '#64748b';
+    Chart.defaults.borderColor = '#e2e8f0';
+
+    document.addEventListener('keydown', function(e) {
+      const deck = document.querySelector('.deck');
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); deck.scrollBy({ left: window.innerWidth, behavior: 'smooth' }); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); deck.scrollBy({ left: -window.innerWidth, behavior: 'smooth' }); }
+    });
+
+    function makeChart(id, config) {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const ctx = el.getContext('2d');
+      return new Chart(ctx, { type: config.type || 'bar', data: config.data, options: config.options || {} });
+    }
+
+    // Activation — bar
+    makeChart('chartActivation', {
+      type: 'bar',
+      data: {
+        labels: ['Jan (sample)', 'Feb 2026', 'Feb 2026 (peak)'],
+        datasets: [{ label: 'Activation cost-share %', data: [3.2, 33.86, 38.91], backgroundColor: [GRAY, BOLT_GREEN, BOLT_DARK], borderRadius: 8 }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: t => t.raw + '%' } } },
+        scales: { x: { max: 45, ticks: { callback: v => v + '%' } }, y: { grid: { display: false } } }
+      }
+    });
+
+    // ULC — stacked/grouped bars (Bolt vs Provider)
+    makeChart('chartULC', {
+      type: 'bar',
+      data: {
+        labels: ['Dec 25', 'Jan 26', 'Feb 26', 'Mar 26'],
+        datasets: [
+          { label: 'Bolt spend (€k)', data: [177, 149, 120, 40], backgroundColor: BOLT_GREEN, borderRadius: 6 },
+          { label: 'Provider spend (€k)', data: [60, 33, 67, 24], backgroundColor: GRAY, borderRadius: 6 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { x: { grid: { display: false } }, y: { ticks: { callback: v => v + 'k' } } }
+      }
+    });
+    makeChart('chartULCpercent', {
+      type: 'line',
+      data: {
+        labels: ['Dec 25', 'Jan 26', 'Feb 26', 'Mar 26'],
+        datasets: [{ label: 'ULC % cost share', data: [25.2, 18.2, 35.7, 37], borderColor: BOLT_GREEN, backgroundColor: 'rgba(0,209,102,0.1)', fill: true, tension: 0.3 }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: t => t.raw + '%' } } },
+        scales: { x: { grid: { display: false } }, y: { min: 0, max: 45, ticks: { callback: v => v + '%' } } }
+      }
+    });
+
+    // PPC & Availability — two lines
+    makeChart('chartAvailability', {
+      type: 'line',
+      data: {
+        labels: ['Oct 25', 'Nov 25', 'Dec 25', 'Jan 26', 'Feb 26', 'Mar 26'],
+        datasets: [
+          { label: 'Availability %', data: [82.8, 77.8, 74.5, 70.9, 73.6, 77.1], borderColor: BOLT_GREEN, backgroundColor: 'rgba(0,209,102,0.1)', fill: true, tension: 0.3 },
+          { label: 'Closure rate %', data: [5.8, 5.9, 8, 14.1, 8.8, 1.9], borderColor: GRAY, backgroundColor: 'rgba(148,163,184,0.1)', fill: true, tension: 0.3 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: t => t.raw + '%' } } },
+        scales: { x: { grid: { display: false } }, y: { min: 0, max: 100, ticks: { callback: v => v + '%' } } }
+      }
+    });
+
+    // Sponsored listing — Revenue vs Target bars + % line
+    makeChart('chartSponsored', {
+      type: 'bar',
+      data: {
+        labels: ['Jan 26', 'Feb 26', 'Mar 26'],
+        datasets: [
+          { label: 'Revenue (€)', data: [3084, 8888, 2607], backgroundColor: BOLT_GREEN, borderRadius: 8 },
+          { label: 'Target (€)', data: [2022, 3033, 5055], backgroundColor: GRAY, borderRadius: 8 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { x: { grid: { display: false } } }
+      }
+    });
+
+    // Bolt+ — line
+    makeChart('chartBoltPlus', {
+      type: 'line',
+      data: {
+        labels: ['Sep 25', 'Oct 25', 'Nov 25', 'Dec 25', 'Jan 26', 'Feb 26'],
+        datasets: [{ label: 'Bolt+ GMV share %', data: [57.2, 60.4, 63.7, 61.7, 59.7, 60.5], borderColor: BOLT_GREEN, backgroundColor: 'rgba(0,209,102,0.15)', fill: true, tension: 0.3 }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: t => t.raw + '%' } } },
+        scales: { x: { grid: { display: false } }, y: { min: 50, max: 70, ticks: { callback: v => v + '%' } } }
+      }
+    });
+
+    // To improve — horizontal bar (vs target %)
+    makeChart('chartToImprove', {
+      type: 'bar',
+      data: {
+        labels: ['Marketing Promos (MM)', 'Smart Promos spend %', 'Smart Promos (MM)', 'Bolt+ % GMV', 'Ads Revenue'],
+        datasets: [{ label: 'Vs target %', data: [-52.7, -0.6, -7.5, -2.5, -77.3], backgroundColor: [RED, RED, RED, RED, RED], borderRadius: 6 }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: t => t.raw + '%' } } },
+        scales: { x: { min: -80, max: 10, ticks: { callback: v => v + '%' } }, y: { grid: { display: false } } }
+      }
+    });
+
+    // Churn — line (bad trend)
+    makeChart('chartChurn', {
+      type: 'line',
+      data: {
+        labels: ['Sep 25', 'Oct 25', 'Nov 25', 'Dec 25', 'Jan 26', 'Feb 26', 'Mar 26'],
+        datasets: [{ label: 'Churn count', data: [243, 345, 349, 444, 478, 515, 79], borderColor: RED, backgroundColor: 'rgba(220,38,38,0.1)', fill: true, tension: 0.2 }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } }, y: { min: 0 } }
+      }
+    });
+  </script>
+</body>
+</html>

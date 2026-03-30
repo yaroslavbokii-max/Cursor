@@ -1,0 +1,36 @@
+# User Default Preferences
+# These are used when user doesn't specify
+
+# Content density preference
+content_density: "balanced"  # executive | balanced | detailed
+
+# Default audience level
+audience: "team_lead"  # executive | team_lead | analyst | external
+
+# Default output formats (all enabled by default)
+outputs:
+  html: true
+  pdf_ready: true
+  gamma_ready: true
+  markdown: false
+
+# Iteration depth
+depth: "balanced"  # quick | balanced | deep
+
+# Print preferences
+print:
+  page_size: "A4"
+  orientation: "auto"  # auto | portrait | landscape
+
+# Quality threshold
+min_quality_score: 80
+
+# Auto-save learnings to MEMORY.md
+auto_save_learnings: true
+
+# Show validation panel
+show_validation: true
+
+
+
+

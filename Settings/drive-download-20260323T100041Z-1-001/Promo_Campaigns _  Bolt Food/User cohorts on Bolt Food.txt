@@ -1,0 +1,9 @@
+﻿To clarify user cohorts on Bolt Food: 
+* New Users: Users who had their first delivered order in Bolt Food during a given period. If a user had their first delivered order in Bolt Market before, they are still considered new for Food if it’s their first Food order.
+* Active Users: Users who had at least one successfully delivered order in a given period. This can be measured as DAU (daily), WAU (weekly), or MAU (monthly).
+* Churned Users: Activated users with 0 orders in the past 90 days are considered churned. There is also a "soft churn" cohort: users with 0 orders in the past 28 days but at least 1 order in the 29–90 day window.
+* Order Frequency: Calculated as the average number of orders per active user in a given period (Delivered orders / Active users). Users can be further segmented by frequency:
+   * Occasional: 1 order in the past 28 days
+   * Medium Frequency: 2–3 orders in the past 28 days
+   * High Frequency: 4+ orders in the past 28 days
+These definitions are used to segment users for targeted engagement and product optimization.

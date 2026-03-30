@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Workflow Showcase — The Radiant Operator</title>
+    <style>
+        :root {
+            --gold: #D4A744;
+            --gold-dark: #B8942E;
+            --gold-light: #E8C76B;
+            --bg-primary: #1C1C28;
+            --bg-secondary: #252532;
+            --bg-tertiary: #2D2D3D;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0B0;
+            --text-muted: #6B6B7B;
+            --success: #4CAF50;
+            --info: #2196F3;
+            --warning: #FF9800;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            padding: 3rem 2rem;
+            border-bottom: 2px solid var(--gold);
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.75rem;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.15rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--gold);
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* Search & Filters */
+        .controls {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        
+        .search-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .search-box {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        
+        .search-box::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+        
+        .filter-btn.active {
+            background: var(--gold);
+            border-color: var(--gold);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+        
+        /* Workflows Grid */
+        .workflows-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        /* Workflow Card */
+        .workflow-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid transparent;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .workflow-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        
+        .card-header {
+            margin-bottom: 1rem;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: rgba(33, 150, 243, 0.15);
+            color: var(--info);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+        
+        .category-badge.analysis { background: rgba(33, 150, 243, 0.15); color: #64B5F6; }
+        .category-badge.creation { background: rgba(156, 39, 176, 0.15); color: #CE93D8; }
+        .category-badge.strategy { background: rgba(255, 152, 0, 0.15); color: #FFB74D; }
+        .category-badge.automation { background: rgba(76, 175, 80, 0.15); color: #81C784; }
+        .category-badge.content { background: rgba(233, 30, 99, 0.15); color: #F48FB1; }
+        .category-badge.product { background: rgba(0, 188, 212, 0.15); color: #4DD0E1; }
+        .category-badge.people { background: rgba(255, 87, 34, 0.15); color: #FF8A65; }
+        .category-badge.knowledge { background: rgba(121, 85, 72, 0.15); color: #A1887F; }
+        .category-badge.productivity { background: rgba(96, 125, 139, 0.15); color: #90A4AE; }
+        
+        .workflow-card h3 {
+            color: var(--text-primary);
+            font-size: 1.15rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .workflow-card .description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            flex-grow: 1;
+        }
+        
+        .meta-row {
+            display: flex;
+            gap: 1.25rem;
+            margin-bottom: 1rem;
+            font-size: 0.8rem;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            color: var(--text-muted);
+        }
+        
+        .meta-item .icon {
+            font-size: 0.9rem;
+        }
+        
+        .agents-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .agent-tag {
+            background: rgba(212, 167, 68, 0.15);
+            color: var(--gold);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-family: 'SF Mono', 'Monaco', monospace;
+        }
+        
+        .example-prompt {
+            background: var(--bg-primary);
+            padding: 0.875rem;
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            border-left: 3px solid var(--gold);
+        }
+        
+        .copy-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--gold);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: var(--gold-light);
+        }
+        
+        .copy-btn.copied {
+            background: var(--success);
+        }
+        
+        /* Quick Start Section */
+        .quick-start {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--bg-tertiary);
+        }
+        
+        .quick-start h2 {
+            color: var(--gold);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+        
+        .quick-start-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .quick-start-item {
+            background: var(--bg-primary);
+            padding: 1.25rem;
+            border-radius: 8px;
+        }
+        
+        .quick-start-item h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .quick-start-item p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .quick-start-item code {
+            display: block;
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--gold);
+            font-family: 'SF Mono', 'Monaco', monospace;
+        }
+        
+        /* No Results */
+        .no-results {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+        
+        .no-results h3 {
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--bg-tertiary);
+            margin-top: 3rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-row {
+                gap: 1.5rem;
+            }
+            
+            .workflows-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .search-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🚀 Agent Workflow Showcase</h1>
+        <p class="subtitle">Discover what you can accomplish with The Radiant Operator agent stack</p>
+        <div class="stats-row">
+            <div class="stat">
+                <div class="stat-number">45</div>
+                <div class="stat-label">Agents</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">100+</div>
+                <div class="stat-label">Workflows</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">10</div>
+                <div class="stat-label">Categories</div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="container">
+        <!-- Quick Start -->
+        <section class="quick-start">
+            <h2>⚡ Quick Start — Just Describe Your Task</h2>
+            <div class="quick-start-grid">
+                <div class="quick-start-item">
+                    <h4>Don't know which agent?</h4>
+                    <p>Just tell the Orchestrator what you want in plain language:</p>
+                    <code>"I have this business problem: conversion dropped 15%. Help me understand why."</code>
+                </div>
+                <div class="quick-start-item">
+                    <h4>Want a specific workflow?</h4>
+                    <p>Copy any prompt below and paste it to start:</p>
+                    <code>"Create a presentation about MECE for business professionals"</code>
+                </div>
+                <div class="quick-start-item">
+                    <h4>Know the agent you need?</h4>
+                    <p>Call it directly:</p>
+                    <code>@data-analyst analyze this CSV and find anomalies</code>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Search & Filters -->
+        <div class="controls">
+            <div class="search-row">
+                <input type="text" class="search-box" id="search" placeholder="Search workflows... (e.g., 'presentation', 'data', 'automate')">
+            </div>
+            <div class="filter-row">
+                <button class="filter-btn active" data-category="all">All Workflows</button>
+                <button class="filter-btn" data-category="analysis">📊 Analysis</button>
+                <button class="filter-btn" data-category="creation">🎨 Creation</button>
+                <button class="filter-btn" data-category="strategy">🎯 Strategy</button>
+                <button class="filter-btn" data-category="automation">⚡ Automation</button>
+                <button class="filter-btn" data-category="content">✍️ Content</button>
+                <button class="filter-btn" data-category="product">💻 Product</button>
+                <button class="filter-btn" data-category="people">👥 People</button>
+                <button class="filter-btn" data-category="productivity">⏰ Productivity</button>
+            </div>
+        </div>
+        
+        <!-- Workflows Grid -->
+        <div class="workflows-grid" id="workflows-container"></div>
+    </main>
+    
+    <footer class="footer">
+        <p>Agent Stack v3.0 — 45 agents, one conversation</p>
+        <p>Built for The Radiant Operator</p>
+    </footer>
+    
+    <script>
+        const workflows = [
+            // === ANALYSIS ===
+            {
+                id: 1,
+                title: "Data Analysis & Root Cause",
+                description: "Analyze data to find patterns, anomalies, and root causes. Get visualizations and actionable insights.",
+                category: "analysis",
+                agents: ["data-analyst", "data-visualization-expert"],
+                prompt: "Analyze this data and help me understand why [metric] changed",
+                time: "15-30 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 2,
+                title: "Customer Research Synthesis",
+                description: "Turn customer feedback, surveys, and interviews into actionable personas and pain point analysis.",
+                category: "analysis",
+                agents: ["customer-insight-analyst", "data-analyst"],
+                prompt: "Analyze this customer feedback and identify key pain points and personas",
+                time: "30-45 min",
+                difficulty: "Intermediate"
+            },
+            {
+                id: 3,
+                title: "Document Knowledge Extraction",
+                description: "Extract key information from documents, create summaries, and build knowledge bases.",
+                category: "analysis",
+                agents: ["document-processor", "knowledge-extractor"],
+                prompt: "Extract the key information from these documents and summarize",
+                time: "15-25 min",
+                difficulty: "Beginner"
+            },
+            
+            // === CREATION ===
+            {
+                id: 4,
+                title: "Professional Presentation",
+                description: "Create McKinsey-quality presentations with clear structure, compelling visuals, and strong narrative.",
+                category: "creation",
+                agents: ["presentation-maker", "visual-designer", "data-visualization-expert"],
+                prompt: "Create a presentation about [topic] for [audience]",
+                time: "25-40 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 5,
+                title: "Gamma-Optimized Deck",
+                description: "Create content optimized for Gamma's paste-text feature with visual guidance for each slide.",
+                category: "creation",
+                agents: ["presentation-maker", "gamma-optimizer"],
+                prompt: "Create a Gamma-ready presentation about [topic]",
+                time: "20-30 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 6,
+                title: "Workshop Design",
+                description: "Design complete workshops with exercises, facilitation guides, and participant materials.",
+                category: "creation",
+                agents: ["workshop-exercise-designer", "facilitation-guide-generator", "visual-designer"],
+                prompt: "Design a [duration] workshop about [topic] for [audience]",
+                time: "45-60 min",
+                difficulty: "Intermediate"
+            },
+            {
+                id: 7,
+                title: "Print-Ready Document",
+                description: "Create professionally formatted documents optimized for printing (A4/A5, cheat sheets, handouts).",
+                category: "creation",
+                agents: ["layout-architect", "visual-designer"],
+                prompt: "Create a print-ready [document type] about [topic]",
+                time: "20-35 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 8,
+                title: "Interactive HTML Guide",
+                description: "Create interactive HTML content with navigation, styling, and professional formatting.",
+                category: "creation",
+                agents: ["interactive-content-compiler", "visual-designer"],
+                prompt: "Create an interactive HTML guide about [topic]",
+                time: "30-45 min",
+                difficulty: "Intermediate"
+            },
+            
+            // === STRATEGY ===
+            {
+                id: 9,
+                title: "Product Strategy & PRD",
+                description: "Develop product strategy and create comprehensive PRDs ready for development.",
+                category: "strategy",
+                agents: ["product-architect", "prd-architect", "customer-insight-analyst"],
+                prompt: "Help me define the product strategy and PRD for [product idea]",
+                time: "45-60 min",
+                difficulty: "Intermediate"
+            },
+            {
+                id: 10,
+                title: "Go-To-Market Strategy",
+                description: "Create comprehensive GTM strategy including positioning, pricing, channels, and launch plan.",
+                category: "strategy",
+                agents: ["gtm-strategist", "brand-architect", "copywriter"],
+                prompt: "Create a go-to-market strategy for [product/service]",
+                time: "45-60 min",
+                difficulty: "Advanced"
+            },
+            {
+                id: 11,
+                title: "Business Idea Generation",
+                description: "Generate innovative business ideas using Thinkertoys methodology and expert validation.",
+                category: "strategy",
+                agents: ["idea-forge", "expert-panel"],
+                prompt: "Help me brainstorm business ideas for [domain/problem]",
+                time: "30-45 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 12,
+                title: "Expert Panel Analysis",
+                description: "Get perspectives from simulated experts across different domains on any topic.",
+                category: "strategy",
+                agents: ["expert-panel"],
+                prompt: "Get expert perspectives on [topic/decision]",
+                time: "20-30 min",
+                difficulty: "Beginner"
+            },
+            
+            // === AUTOMATION ===
+            {
+                id: 13,
+                title: "Web Scraping Pipeline",
+                description: "Extract data from difficult websites including JavaScript-rendered pages and anti-bot protected sites.",
+                category: "automation",
+                agents: ["web-scraper-ninja", "data-enrichment-agent"],
+                prompt: "Scrape [data type] from [website] and structure it",
+                time: "30-45 min",
+                difficulty: "Intermediate"
+            },
+            {
+                id: 14,
+                title: "n8n Workflow Automation",
+                description: "Design and generate n8n workflows to automate repetitive tasks and processes.",
+                category: "automation",
+                agents: ["n8n-workflow-architect"],
+                prompt: "Automate this process: [describe manual steps]",
+                time: "20-40 min",
+                difficulty: "Intermediate"
+            },
+            {
+                id: 15,
+                title: "Deployment & CI/CD Setup",
+                description: "Set up hosting, deployment pipelines, and infrastructure for your projects.",
+                category: "automation",
+                agents: ["devops-setup-agent", "code-generator"],
+                prompt: "Help me deploy [project] to [platform]",
+                time: "20-35 min",
+                difficulty: "Intermediate"
+            },
+            
+            // === CONTENT ===
+            {
+                id: 16,
+                title: "LinkedIn Content Strategy",
+                description: "Create LinkedIn posts, articles, and content calendar for personal brand building.",
+                category: "content",
+                agents: ["personal-brand-builder", "copywriter"],
+                prompt: "Create a LinkedIn post about [topic] for [my professional context]",
+                time: "10-20 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 17,
+                title: "Blog Article Creation",
+                description: "Write SEO-optimized blog articles with proper structure and engaging content.",
+                category: "content",
+                agents: ["personal-brand-builder", "seo-optimizer"],
+                prompt: "Write a blog article about [topic] for [audience]",
+                time: "30-45 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 18,
+                title: "Sales Copy & Landing Page",
+                description: "Create persuasive sales copy, landing pages, and email sequences.",
+                category: "content",
+                agents: ["copywriter", "seo-optimizer"],
+                prompt: "Write sales copy for [product/service] targeting [audience]",
+                time: "25-40 min",
+                difficulty: "Intermediate"
+            },
+            {
+                id: 19,
+                title: "Brand Identity Creation",
+                description: "Develop complete brand identity including visual guidelines and tone of voice.",
+                category: "content",
+                agents: ["brand-architect", "visual-designer"],
+                prompt: "Create brand guidelines for [company/personal brand]",
+                time: "45-60 min",
+                difficulty: "Advanced"
+            },
+            
+            // === PRODUCT ===
+            {
+                id: 20,
+                title: "Internal Tool Design",
+                description: "Design and build internal tools, dashboards, CRMs, and admin panels.",
+                category: "product",
+                agents: ["internal-tool-builder", "prd-architect", "database-architect"],
+                prompt: "Build an internal tool for [use case]",
+                time: "45-90 min",
+                difficulty: "Advanced"
+            },
+            {
+                id: 21,
+                title: "Database Schema Design",
+                description: "Design database schemas optimized for your application's needs.",
+                category: "product",
+                agents: ["database-architect", "code-generator"],
+                prompt: "Design a database schema for [application type]",
+                time: "20-35 min",
+                difficulty: "Intermediate"
+            },
+            {
+                id: 22,
+                title: "Form & Survey Creation",
+                description: "Create smart forms and surveys with proper question design and validation.",
+                category: "product",
+                agents: ["form-generator", "expert-panel"],
+                prompt: "Create a survey about [topic] for [purpose]",
+                time: "15-25 min",
+                difficulty: "Beginner"
+            },
+            
+            // === PEOPLE ===
+            {
+                id: 23,
+                title: "Performance Review Prep",
+                description: "Prepare for performance reviews with structured feedback and development plans.",
+                category: "people",
+                agents: ["people-leader-coach", "team-template-generator"],
+                prompt: "Help me prepare a performance review for [context]",
+                time: "20-30 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 24,
+                title: "Difficult Conversation Prep",
+                description: "Prepare for difficult conversations with coaching on approach and messaging.",
+                category: "people",
+                agents: ["people-leader-coach"],
+                prompt: "Help me prepare for a difficult conversation about [situation]",
+                time: "15-25 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 25,
+                title: "Team Templates & OKRs",
+                description: "Create productivity templates for teams including OKRs, project tracking, and updates.",
+                category: "people",
+                agents: ["team-template-generator", "people-leader-coach"],
+                prompt: "Create [template type] for my team",
+                time: "15-25 min",
+                difficulty: "Beginner"
+            },
+            
+            // === PRODUCTIVITY ===
+            {
+                id: 26,
+                title: "Automated Report Generation",
+                description: "Set up automated reports (MBR, QBR) that update with new data.",
+                category: "productivity",
+                agents: ["report-automator", "data-analyst", "presentation-maker"],
+                prompt: "Automate my [report type] using this template and data",
+                time: "30-45 min",
+                difficulty: "Intermediate"
+            },
+            {
+                id: 27,
+                title: "Meeting Summary & Actions",
+                description: "Generate meeting summaries, action items, and follow-up communications.",
+                category: "productivity",
+                agents: ["meeting-commander"],
+                prompt: "Summarize this meeting and extract action items",
+                time: "10-15 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 28,
+                title: "Learning Path Design",
+                description: "Create personalized learning paths with study materials and practice exercises.",
+                category: "productivity",
+                agents: ["learning-accelerator", "knowledge-extractor"],
+                prompt: "Create a learning path for [skill/topic]",
+                time: "25-40 min",
+                difficulty: "Beginner"
+            },
+            {
+                id: 29,
+                title: "Knowledge Base Setup",
+                description: "Design and structure knowledge bases, FAQs, and documentation systems.",
+                category: "productivity",
+                agents: ["knowledge-base-architect", "document-processor"],
+                prompt: "Help me set up a knowledge base for [topic/team]",
+                time: "30-45 min",
+                difficulty: "Intermediate"
+            }
+        ];
+        
+        function renderWorkflows(filter = 'all', search = '') {
+            const container = document.getElementById('workflows-container');
+            container.innerHTML = '';
+            
+            let filtered = workflows;
+            
+            if (filter !== 'all') {
+                filtered = filtered.filter(w => w.category === filter);
+            }
+            
+            if (search) {
+                const searchLower = search.toLowerCase();
+                filtered = filtered.filter(w => 
+                    w.title.toLowerCase().includes(searchLower) ||
+                    w.description.toLowerCase().includes(searchLower) ||
+                    w.agents.some(a => a.toLowerCase().includes(searchLower)) ||
+                    w.prompt.toLowerCase().includes(searchLower)
+                );
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="no-results" style="grid-column: 1 / -1;">
+                        <h3>No workflows found</h3>
+                        <p>Try a different search term or category</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            filtered.forEach(workflow => {
+                const card = document.createElement('div');
+                card.className = 'workflow-card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="category-badge ${workflow.category}">${workflow.category}</span>
+                        <h3>${workflow.title}</h3>
+                    </div>
+                    <p class="description">${workflow.description}</p>
+                    <div class="meta-row">
+                        <span class="meta-item"><span class="icon">⏱️</span> ${workflow.time}</span>
+                        <span class="meta-item"><span class="icon">📊</span> ${workflow.difficulty}</span>
+                    </div>
+                    <div class="agents-row">
+                        ${workflow.agents.map(a => `<span class="agent-tag">@${a}</span>`).join('')}
+                    </div>
+                    <div class="example-prompt">"${workflow.prompt}"</div>
+                    <button class="copy-btn" onclick="copyPrompt(this, '${workflow.prompt.replace(/'/g, "\\'")}')">
+                        📋 Copy Prompt
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function copyPrompt(btn, prompt) {
+            navigator.clipboard.writeText(prompt);
+            btn.textContent = '✓ Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = '📋 Copy Prompt';
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+        
+        // Event listeners
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderWorkflows(btn.dataset.category, document.getElementById('search').value);
+            });
+        });
+        
+        document.getElementById('search').addEventListener('input', (e) => {
+            const activeFilter = document.querySelector('.filter-btn.active').dataset.category;
+            renderWorkflows(activeFilter, e.target.value);
+        });
+        
+        // Initial render
+        renderWorkflows();
+    </script>
+</body>
+</html>
+
+
+
+

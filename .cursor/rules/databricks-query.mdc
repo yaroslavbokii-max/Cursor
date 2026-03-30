@@ -1,0 +1,84 @@
+---
+description: Query Bolt Databricks SQL warehouse when the user includes "dbx" in their message
+alwaysApply: true
+---
+
+# Databricks Querying (trigger: `dbx`)
+
+ONLY query Databricks when the user includes the word **dbx** in their message.
+If the user does NOT say `dbx`, do NOT attempt to query Databricks.
+
+## Local setup (once per machine)
+
+Code lives in **`databricks-dbx/`** at the workspace root. Step-by-step human guide:
+
+- **`drive-download-20260326T094146Z-1-001/Databricks & QBRs /COLLEAGUE_SETUP_GUIDE.md`** — token, `.env`, test `python3 dbx.py`.
+
+Concrete commands from this repo:
+
+1. `cd /Users/yaroslav/Desktop/cursor/databricks-dbx`
+2. `pip3 install -r requirements.txt` (or install packages from the guide)
+3. Copy `.env.example` → `.env`, set `DATABRICKS_TOKEN` from Databricks **Settings → Developer → Access tokens**
+4. `python3 dbx.py` — expect `Connected successfully!`
+
+**Folder name quirk:** the docs directory is literally named `Databricks & QBRs ` (**trailing space** after `QBRs`). In terminal, quote the path or use Tab completion.
+
+## How to run a query
+
+Use the Shell tool with the project folder that contains `dbx.py` and `.env`:
+
+```bash
+cd /Users/yaroslav/Desktop/cursor/databricks-dbx && python3 -c "
+from dbx import DBX
+with DBX() as dbx:
+    df = dbx.query('''<SQL HERE>''')
+    print(df.to_string())
+"
+```
+
+- Always use `with DBX() as dbx:` so the connection closes properly.
+- Add `LIMIT` for large results to avoid flooding the terminal.
+- Set Shell `block_until_ms` to at least 60000 (queries can take a while).
+- To save results: `df.to_csv('/tmp/output.csv', index=False)`.
+
+## Connection details
+
+- Server: `bolt-incentives.cloud.databricks.com`
+- HTTP path: `sql/protocolv1/o/2472566184436351/0221-081903-9ag4bh69`
+- Auth: Personal Access Token in `databricks-dbx/.env`
+
+## Reference docs (workspace)
+
+Canonical pack (same Drive export; paths relative to workspace root):
+
+| File | Purpose |
+|------|---------|
+| `drive-download-20260326T094146Z-1-001/Databricks & QBRs /COLLEAGUE_SETUP_GUIDE.md` | PAT, `.env`, Cursor rule overview |
+| `drive-download-20260326T094146Z-1-001/Databricks & QBRs /tables-reference.md` | Table catalog, P&L vs drill-down, partitions |
+| `drive-download-20260326T094146Z-1-001/Databricks & QBRs /schema_notes.md` | Column-level notes |
+| `drive-download-20260326T094146Z-1-001/Databricks & QBRs /analysis-framework.md` | Bolt Food analysis patterns, vertical splits |
+| `drive-download-20260326T094146Z-1-001/Databricks & QBRs /MBR Maker v0.md` | MBR helper context |
+
+Before writing complex SQL, skim **tables-reference** and **analysis-framework** for grain (weekly vs monthly, invoiced vs order-level) and `delivery_vertical` rules.
+
+## Available tables (summary)
+
+**ng_public_spark:** `etl_delivery_order_monetary_metrics`, `etl_delivery_campaign_order_metrics`, `etl_delivery_campaigns_enrollments`, `etl_eater_cohorts_lcs_weekly_by_city`, `mart_delivery_eater_primary_city_zone_weekly`, `etl_incentives_provider_targeting_features`
+
+**ng_delivery_spark:** `fact_order_delivery`, `dim_provider_v2`, `dim_delivery_city`, `dim_user_delivery`, `dim_basket_item_delivery`, `dim_order_delivery` *(basket-item grain; use `fact_order_delivery` for order-level)*, `etl_delivery_order_user_basket_item_v2`, `delivery_provider_provider_trait`, `delivery_campaign_provider`, `delivery_eater_campaign_targeted_campaign`, `dim_courier`, `fact_courier_daily_v2`, `fact_courier_weekly`, `delivery_courier_fleet`, `delivery_order_order_courier_earning`, `delivery_pricing_courier_earning_component`, plus pre-aggregated `fact_delivery_*_weekly/monthly` per tables-reference.
+
+**ng_delivery_store_spark:** `etl_delivery_store_order_item_cogs`
+
+**core_models_spark:** `fact_user_subscriptions`, `fact_provider_smart_promo_offer_campaign_enrollment`
+
+## Tips
+
+- Discover columns: `DESCRIBE <table_name>`
+- Preview: `SELECT * FROM <table_name> LIMIT 5`
+- Common date column: `order_created_date`; use `DATE_SUB(CURRENT_DATE(), N)` where applicable
+- **Filter `order_state = 'delivered'`** for analytics on order-level tables
+- **Include partition columns** in WHERE: `order_created_date`, `date`, `week_date`, `metric_timestamp_partition`, `basket_item_created_date`
+- Country column varies by table (ISO 2-letter). Malta examples: `city_country_code = 'mt'`, `country = 'mt'`, `country_code = 'mt'`, `provider_country_code = 'mt'`, or `city_id IN (324, 831)` where no country col
+- `order_created_date` in `etl_delivery_order_monetary_metrics` is **STRING** — compare as strings (e.g. `>= '2026-01-01'`)
+- Courier facts: weighted averages `SUM(metric * weight) / NULLIF(SUM(weight), 0)`
+- **Bolt Food financials:** `delivery_vertical IN ('food', 'store_3p_ent', 'store_3p_mm_smb')`; do not use only `'food'` for GMV totals

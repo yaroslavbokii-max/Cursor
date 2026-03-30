@@ -1,0 +1,32 @@
+# User Brand Preferences
+# Auto-populated by orchestration agent
+
+# Default brand for all outputs
+default_brand: "bolt"
+
+# When this preference was saved
+saved_at: "2026-01-14T12:00:00Z"
+
+# User explicitly confirmed this preference
+user_confirmed: true
+
+# Override by output type (optional)
+overrides:
+  presentations: null    # Use default
+  dashboards: null       # Use default
+  workshops: null        # Use default
+  reports: null          # Use default
+
+# Custom brand (if not using preset)
+custom_brand: null
+# Example:
+#   name: "My Company"
+#   colors:
+#     primary: "#FF5733"
+#     secondary: "#333333"
+#     background: "#FFFFFF"
+#     text: "#1F2937"
+
+
+
+
