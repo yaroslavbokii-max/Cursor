@@ -1,7 +1,7 @@
 """
 ULC Activation Cost Share — regional dashboard.
 Password: .streamlit/secrets.toml (DASHBOARD_PASSWORD) or DASHBOARD_PASSWORD env var.
-Databricks: ../databricks-dbx/.env (DATABRICKS_TOKEN).
+Databricks token: ../databricks-dbx/.env (local) or Streamlit Cloud Secrets (DATABRICKS_TOKEN).
 """
 
 from __future__ import annotations
@@ -17,6 +17,21 @@ import streamlit as st
 _APP_DIR = Path(__file__).resolve().parent
 if str(_APP_DIR) not in sys.path:
     sys.path.insert(0, str(_APP_DIR))
+
+
+def _cloud_secrets_to_env() -> None:
+    """Streamlit Cloud stores secrets in st.secrets; dbx.py reads DATABRICKS_TOKEN from os.environ."""
+    if os.environ.get("DATABRICKS_TOKEN", "").strip():
+        return
+    try:
+        tok = st.secrets.get("DATABRICKS_TOKEN")
+        if tok:
+            os.environ["DATABRICKS_TOKEN"] = str(tok).strip()
+    except Exception:
+        pass
+
+
+_cloud_secrets_to_env()
 
 import pandas as pd
 
