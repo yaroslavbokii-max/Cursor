@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ULC activation — cost share</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <style>
+    :root { --bg:#0f1419; --card:#1a2332; --text:#e7ecf3; --muted:#8b9cb3; --accent:#3d8bfd; --ok:#34d399; --warn:#fbbf24; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.45; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 1.25rem 1rem 2.5rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 0.35rem; }
+    .def { color: var(--muted); font-size: 0.82rem; margin: 0 0 1rem; }
+    .targets { font-size: 0.78rem; color: var(--muted); margin: 0 0 1rem; padding: 0.6rem 0.75rem; background: rgba(0,0,0,.25); border-radius: 8px; border-left: 3px solid var(--accent); }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem; }
+    select, button {
+      background: var(--card); color: var(--text); border: 1px solid rgba(255,255,255,.12);
+      padding: 0.45rem 0.7rem; border-radius: 8px; font-size: 0.88rem;
+    }
+    button { background: var(--accent); border-color: transparent; cursor: pointer; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .meta { font-size: 0.78rem; color: var(--muted); }
+    .panel { background: var(--card); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,.06); }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 0.5rem; }
+    .kpi { padding: 0.65rem 0.75rem; background: rgba(0,0,0,.2); border-radius: 8px; }
+    .kpi .l { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+    .kpi .v { font-size: 1.05rem; font-weight: 700; }
+    .kpi .v.good { color: var(--ok); }
+    .kpi .v.warn { color: var(--warn); }
+    .chart { height: 240px; position: relative; }
+    .err { color: #f87171; font-size: 0.85rem; }
+    code { background: rgba(0,0,0,.35); padding: 0.08em 0.3em; border-radius: 4px; font-size: 0.88em; }
+    h2 { font-size: 0.8rem; color: var(--muted); margin: 0 0 0.5rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>ULC activation — cost share</h1>
+    <p class="def" id="definition">Завантаження опису метрики…</p>
+    <p class="targets">
+      Орієнтири з growth framework (нагадування): cost share зазвичай порівнюють з цілями регіону — наприклад <strong>&gt;40%</strong> (profit countries) / <strong>&gt;30%</strong> (інші). Це не «поріг у дашборді», а контекст для аналізу.
+    </p>
+
+    <div class="panel">
+      <div class="row">
+        <label for="country-select">Країна</label>
+        <select id="country-select"><option value="">— завантаження… —</option></select>
+        <button type="button" id="go-btn" disabled>Показати</button>
+      </div>
+      <p class="meta" id="country-meta"></p>
+      <p class="meta" id="refresh-hint"></p>
+      <p class="err" id="err" hidden></p>
+    </div>
+
+    <div id="app" style="display:none">
+      <div class="panel kpis" id="kpis"></div>
+      <div class="panel">
+        <h2>Cost share % по тижнях</h2>
+        <div class="chart"><canvas id="chartShare"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>Spend: merchant vs Bolt (EUR)</h2>
+        <div class="chart"><canvas id="chartSpend"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var countrySelect = document.getElementById("country-select");
+    var goBtn = document.getElementById("go-btn");
+    var countryMeta = document.getElementById("country-meta");
+    var refreshHint = document.getElementById("refresh-hint");
+    var errEl = document.getElementById("err");
+    var appEl = document.getElementById("app");
+    var _countries = [];
+    var _refresh = "";
+    var _defText = "";
+    var chartShare, chartSpend;
+
+    function showErr(msg) {
+      errEl.textContent = msg;
+      errEl.hidden = !msg;
+    }
+
+    function targetClass(pct) {
+      if (pct == null || isNaN(pct)) return "";
+      if (pct >= 40) return "good";
+      if (pct >= 30) return "warn";
+      return "";
+    }
+
+    async function loadCountries() {
+      try {
+        var resp = await fetch("ulc-activation-data/countries.json", { cache: "no-store" });
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        var data = await resp.json();
+        _defText = (data.definition || "") + (data.metric ? " · " + data.metric : "");
+        document.getElementById("definition").textContent = _defText || "ULC activation cost share.";
+        _countries = data.countries || [];
+        _refresh = data.refreshed || "";
+        countrySelect.innerHTML = '<option value="">— оберіть країну —</option>';
+        _countries.forEach(function (c) {
+          var o = document.createElement("option");
+          o.value = c.code;
+          var cs = c.cost_share_pct != null ? " · " + Number(c.cost_share_pct).toFixed(1) + "% CS" : "";
+          o.textContent = c.code.toUpperCase() + cs;
+          countrySelect.appendChild(o);
+        });
+        if (_refresh) refreshHint.textContent = "Файли оновлено: " + _refresh;
+      } catch (e) {
+        countrySelect.innerHTML = '<option value="">помилка</option>';
+        showErr("Немає ulc-activation-data/countries.json. Завантаж папку ulc-activation-data на GitHub поруч із цим HTML.");
+      }
+    }
+
+    countrySelect.addEventListener("change", function () {
+      var code = countrySelect.value;
+      goBtn.disabled = !code;
+      countryMeta.textContent = "";
+      if (!code) return;
+      var info = _countries.find(function (c) { return c.code === code; });
+      if (info) {
+        var parts = [];
+        if (info.merchant_eur != null) parts.push("Merchant €" + Number(info.merchant_eur).toLocaleString("uk-UA", { maximumFractionDigits: 0 }));
+        if (info.bolt_eur != null) parts.push("Bolt €" + Number(info.bolt_eur).toLocaleString("uk-UA", { maximumFractionDigits: 0 }));
+        if (info.cost_share_pct != null) parts.push("Blended CS " + Number(info.cost_share_pct).toFixed(1) + "%");
+        if (info.weeks_loaded) parts.push(info.weeks_loaded + " тиж. у CSV");
+        countryMeta.textContent = parts.join(" · ");
+      }
+    });
+
+    goBtn.addEventListener("click", async function () {
+      var code = countrySelect.value;
+      if (!code) return;
+      showErr("");
+      appEl.style.display = "none";
+      try {
+        var resp = await fetch("ulc-activation-data/" + code + ".csv", { cache: "no-store" });
+        if (!resp.ok) throw new Error("Немає " + code + ".csv (HTTP " + resp.status + ")");
+        var csvText = await resp.text();
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function (results) {
+            var rows = results.data.map(function (r) {
+              return {
+                week: r.week,
+                merchant_spend_eur: parseFloat(r.merchant_spend_eur) || 0,
+                bolt_spend_eur: parseFloat(r.bolt_spend_eur) || 0,
+                cost_share_pct: parseFloat(r.cost_share_pct)
+              };
+            });
+            render(rows, code.toUpperCase());
+            appEl.style.display = "block";
+          },
+          error: function (e) { showErr("CSV: " + e.message); }
+        });
+      } catch (e) {
+        showErr(e.message || String(e));
+      }
+    });
+
+    function render(rows, label) {
+      var last = rows[rows.length - 1];
+      var avgCS = rows.reduce(function (s, r) { return s + (isNaN(r.cost_share_pct) ? 0 : r.cost_share_pct); }, 0) / rows.length;
+      var mTot = rows.reduce(function (s, r) { return s + r.merchant_spend_eur; }, 0);
+      var bTot = rows.reduce(function (s, r) { return s + r.bolt_spend_eur; }, 0);
+      var blended = mTot + bTot > 0 ? (100 * mTot / (mTot + bTot)) : null;
+
+      var csClass = targetClass(last && last.cost_share_pct);
+      var avgClass = targetClass(avgCS);
+
+      document.getElementById("kpis").innerHTML =
+        '<div class="kpi"><div class="l">Останній тиждень CS %</div><div class="v ' + csClass + '">' +
+        (last && !isNaN(last.cost_share_pct) ? last.cost_share_pct.toFixed(1) + "%" : "—") + "</div></div>" +
+        '<div class="kpi"><div class="l">Середнє CS % (у файлі)</div><div class="v ' + avgClass + '">' +
+        (!isNaN(avgCS) ? avgCS.toFixed(1) + "%" : "—") + "</div></div>" +
+        '<div class="kpi"><div class="l">Σ Merchant EUR</div><div class="v">€' + mTot.toLocaleString("uk-UA", { maximumFractionDigits: 0 }) + "</div></div>" +
+        '<div class="kpi"><div class="l">Σ Bolt EUR</div><div class="v">€' + bTot.toLocaleString("uk-UA", { maximumFractionDigits: 0 }) + "</div></div>" +
+        '<div class="kpi"><div class="l">Blended CS (з рядків)</div><div class="v ' + targetClass(blended) + '">' +
+        (blended != null ? blended.toFixed(1) + "%" : "—") + "</div></div>";
+
+      var labels = rows.map(function (r) { return r.week; });
+      var ctx1 = document.getElementById("chartShare");
+      if (chartShare) chartShare.destroy();
+      chartShare = new Chart(ctx1, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Cost share %",
+            data: rows.map(function (r) { return r.cost_share_pct; }),
+            borderColor: "#a78bfa",
+            backgroundColor: "rgba(167,139,250,0.2)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: label + " — ULC activation" }
+          },
+          scales: { y: { beginAtZero: false, ticks: { callback: function (v) { return v + "%"; } } } }
+        }
+      });
+
+      var ctx2 = document.getElementById("chartSpend");
+      if (chartSpend) chartSpend.destroy();
+      chartSpend = new Chart(ctx2, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            { label: "Merchant", data: rows.map(function (r) { return r.merchant_spend_eur; }), backgroundColor: "rgba(52,211,153,0.75)" },
+            { label: "Bolt", data: rows.map(function (r) { return r.bolt_spend_eur; }), backgroundColor: "rgba(61,139,253,0.75)" }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+        }
+      });
+    }
+
+    loadCountries();
+  </script>
+</body>
+</html>
