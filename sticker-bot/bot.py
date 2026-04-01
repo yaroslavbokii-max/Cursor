@@ -3,29 +3,32 @@
 Sticker verification Telegram bot.
 
 Modes:
-  python bot.py           — continuous polling (local dev)
-  python bot.py --once    — single poll cycle (GitHub Actions cron)
+  python bot.py              — continuous polling (local dev)
+  python bot.py --once       — single poll cycle (GitHub Actions cron)
+  python bot.py --webhook    — webhook server (Render / production)
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import sys
 import time
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 import requests
 
 from config import (
     TELEGRAM_BOT_TOKEN, ADMIN_CHAT_ID,
     DATABRICKS_TOKEN, DATABRICKS_HOST, DATABRICKS_HTTP_PATH,
-    MSG,
+    WEBHOOK_URL, MSG,
 )
 from storage import (
     load_state, save_state,
     get_session, set_session, clear_session,
     add_submission, find_submission, mark_submission,
-    provider_submission_status,
+    provider_submission_status, add_sticker_request,
 )
 
 logging.basicConfig(
@@ -48,7 +51,6 @@ def tg(method: str, **kwargs):
 
 
 def _esc(text: str) -> str:
-    """Escape Markdown special characters in user-provided values."""
     for ch in ("_", "*", "`", "["):
         text = text.replace(ch, f"\\{ch}")
     return text
@@ -80,6 +82,15 @@ def get_updates(offset=0, timeout=5):
     except Exception as e:
         log.error("getUpdates failed: %s", e)
         return []
+
+
+def set_webhook(url: str):
+    if url:
+        resp = tg("setWebhook", url=url)
+        log.info("setWebhook → %s", resp.get("description", resp))
+    else:
+        tg("deleteWebhook")
+        log.info("Webhook deleted (polling mode)")
 
 
 # ── Databricks provider lookup ──────────────────────────────────────
@@ -129,8 +140,13 @@ def process_update(update: dict, state: dict):
     text = (msg.get("text") or "").strip()
 
     if text == "/start":
-        set_session(state, chat_id, {"step": "awaiting_provider_id"})
+        set_session(state, chat_id, {"step": "ask_has_sticker"})
+        keyboard = {"inline_keyboard": [[
+            {"text": "Так, є стікер ✅", "callback_data": "has_sticker:yes"},
+            {"text": "Ні, потрібен 📦", "callback_data": "has_sticker:no"},
+        ]]}
         send_msg(chat_id, MSG["welcome"])
+        send_msg(chat_id, MSG["has_sticker_question"], reply_markup=keyboard)
         return
 
     if text == "/myid":
@@ -157,6 +173,10 @@ def process_update(update: dict, state: dict):
             send_msg(chat_id, MSG["send_photo"])
     elif step == "submitted":
         send_msg(chat_id, MSG["already_submitted"])
+    elif step == "need_sticker_pid":
+        _handle_need_sticker_pid(chat_id, text, session, state)
+    elif step == "need_sticker_address":
+        _handle_need_sticker_address(chat_id, text, session, state)
 
 
 # ── Step handlers ───────────────────────────────────────────────────
@@ -167,7 +187,6 @@ def _handle_provider_id(chat_id, text, session, state):
         send_msg(chat_id, "Provider ID має бути числом. Спробуйте ще раз:")
         return
 
-    # Anti-fraud: check if this provider already has a submission
     existing = provider_submission_status(state, pid)
     if existing == "approved":
         send_msg(chat_id, MSG["already_approved"].format(pid=pid))
@@ -194,7 +213,6 @@ def _handle_provider_id(chat_id, text, session, state):
     elif DATABRICKS_TOKEN:
         send_msg(chat_id, MSG["provider_not_found"].format(pid=pid))
     else:
-        # No Databricks — accept any numeric ID
         session.update({
             "step": "awaiting_photo",
             "provider_id": pid,
@@ -261,12 +279,103 @@ def _notify_admin(sub):
         log.error("Admin notification failed: %s", result)
 
 
+# ── "Need sticker" flow ─────────────────────────────────────────────
+
+def _handle_need_sticker_pid(chat_id, text, session, state):
+    pid = text.strip()
+    if not pid.isdigit():
+        send_msg(chat_id, "Provider ID має бути числом. Спробуйте ще раз:")
+        return
+
+    provider = lookup_provider(pid)
+    if provider:
+        session.update({
+            "provider_id": pid,
+            "provider_name": provider.get("provider_name", "—"),
+            "city": str(provider.get("city_id", "—")),
+            "step": "need_sticker_address",
+        })
+    elif DATABRICKS_TOKEN:
+        send_msg(chat_id, MSG["provider_not_found"].format(pid=pid))
+        return
+    else:
+        session.update({
+            "provider_id": pid,
+            "provider_name": "—",
+            "city": "—",
+            "step": "need_sticker_address",
+        })
+
+    set_session(state, chat_id, session)
+    send_msg(chat_id, MSG["need_sticker_address"])
+
+
+def _handle_need_sticker_address(chat_id, text, session, state):
+    address = text.strip()
+    if len(address) < 5:
+        send_msg(chat_id, "Будь ласка, введіть повну адресу закладу:")
+        return
+
+    username = session.get("username", "—")
+    req = add_sticker_request(
+        state,
+        chat_id=chat_id,
+        provider_id=session["provider_id"],
+        provider_name=session["provider_name"],
+        city=session["city"],
+        address=address,
+        username=username,
+    )
+
+    clear_session(state, chat_id)
+    send_msg(chat_id, MSG["sticker_request_sent"])
+    _notify_admin_sticker_request(req)
+
+
+def _notify_admin_sticker_request(req):
+    if not ADMIN_CHAT_ID:
+        return
+
+    text = MSG["admin_sticker_request"].format(
+        provider_id=req["provider_id"],
+        provider_name=_esc(req["provider_name"]),
+        city=_esc(req["city"]),
+        address=_esc(req["address"]),
+        username=_esc(req["username"]),
+        time=req["created_at"][:16].replace("T", " "),
+    )
+    send_msg(ADMIN_CHAT_ID, text)
+
+
 # ── Admin callback ──────────────────────────────────────────────────
 
 def _handle_callback(cb, state):
     data = cb.get("data", "")
     cb_id = cb["id"]
+    chat_id = cb["message"]["chat"]["id"]
 
+    # "Has sticker?" buttons
+    if data.startswith("has_sticker:"):
+        answer = data.split(":", 1)[1]
+        answer_cb(cb_id)
+        session = get_session(state, chat_id)
+        if not session:
+            return
+
+        if answer == "yes":
+            session["step"] = "awaiting_provider_id"
+            set_session(state, chat_id, session)
+            send_msg(chat_id, MSG["enter_provider_id"])
+        else:
+            username_raw = cb["from"].get("username", "")
+            first_name = cb["from"].get("first_name", "")
+            session["step"] = "need_sticker_pid"
+            session["username"] = f"@{username_raw}" if username_raw else first_name
+            set_session(state, chat_id, session)
+            send_msg(chat_id, MSG["need_sticker"])
+        return
+
+    # Approve / Reject buttons
     if ":" not in data:
         answer_cb(cb_id, "Unknown action")
         return
@@ -313,17 +422,53 @@ def _handle_status(chat_id, state):
     pending  = sum(1 for s in subs if s["status"] == "pending")
     approved = sum(1 for s in subs if s["status"] == "approved")
     rejected = sum(1 for s in subs if s["status"] == "rejected")
+    sticker_reqs = len(state.get("sticker_requests", []))
 
     send_msg(chat_id, (
         "📊 *Статус заявок*\n\n"
         f"Очікують перевірки: {pending}\n"
         f"Підтверджено: {approved}\n"
         f"Відхилено: {rejected}\n"
-        f"Всього: {len(subs)}"
+        f"Запити на стікер: {sticker_reqs}\n"
+        f"Всього заявок: {len(subs)}"
     ))
 
 
-# ── Main ────────────────────────────────────────────────────────────
+# ── Webhook server ──────────────────────────────────────────────────
+
+class WebhookHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length)
+        self.send_response(200)
+        self.end_headers()
+
+        try:
+            update = json.loads(body)
+            state = load_state()
+            process_update(update, state)
+            save_state(state)
+        except Exception as e:
+            log.error("Webhook error: %s", e)
+
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+    def log_message(self, fmt, *args):
+        pass
+
+
+def run_webhook():
+    port = int(os.environ.get("PORT", 10000))
+    if WEBHOOK_URL:
+        set_webhook(f"{WEBHOOK_URL}/webhook")
+    log.info("Webhook server on port %d", port)
+    HTTPServer(("0.0.0.0", port), WebhookHandler).serve_forever()
+
+
+# ── Polling modes ───────────────────────────────────────────────────
 
 def run_once():
     state = load_state()
@@ -348,6 +493,7 @@ def run_once():
 
 
 def run_polling():
+    set_webhook("")
     log.info("Polling started (Ctrl+C to stop) …")
     state = load_state()
 
@@ -380,5 +526,7 @@ if __name__ == "__main__":
 
     if "--once" in sys.argv:
         run_once()
+    elif "--webhook" in sys.argv:
+        run_webhook()
     else:
         run_polling()

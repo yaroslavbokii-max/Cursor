@@ -22,6 +22,7 @@ _load_env()
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "")
 DATABRICKS_TOKEN = os.environ.get("DATABRICKS_TOKEN", "")
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "")
 
 DATABRICKS_HOST = "bolt-incentives.cloud.databricks.com"
 DATABRICKS_HTTP_PATH = "sql/protocolv1/o/2472566184436351/0221-081903-9ag4bh69"
@@ -37,8 +38,23 @@ MSG = {
         "Привіт! 👋\n\n"
         "Цей бот допоможе підтвердити розміщення стікера Bolt Food "
         "на вітрині вашого закладу.\n\n"
-        "Після підтвердження ми запустимо промо-кампанію для вас.\n\n"
-        "Будь ласка, введіть ваш *Provider ID*:"
+        "Після підтвердження ми запустимо промо-кампанію для вас."
+    ),
+    "has_sticker_question": "Чи є у вас вже стікер Bolt Food?",
+    "enter_provider_id": "Введіть ваш *Provider ID*:",
+    "need_sticker": (
+        "📦 Щоб отримати стікер, нам потрібна інформація:\n\n"
+        "Введіть ваш *Provider ID*:"
+    ),
+    "need_sticker_address": (
+        "Тепер надішліть *адресу вашого закладу* "
+        "для доставки стікера:"
+    ),
+    "sticker_request_sent": (
+        "✅ Дякуємо! Ваш запит на стікер прийнято.\n"
+        "Ми надішлемо стікер найближчим часом.\n\n"
+        "Коли наклеїте його — поверніться через /start "
+        "і надішліть фото підтвердження."
     ),
     "provider_found": (
         "✅ Знайдено: *{name}*\n"
@@ -84,6 +100,15 @@ MSG = {
         "Provider: `{provider_id}`\n"
         "Назва: {provider_name}\n"
         "Місто: {city}\n"
+        "Від: {username}\n"
+        "Час: {time}"
+    ),
+    "admin_sticker_request": (
+        "📦 *Запит на стікер*\n\n"
+        "Provider: `{provider_id}`\n"
+        "Назва: {provider_name}\n"
+        "Місто: {city}\n"
+        "Адреса: {address}\n"
         "Від: {username}\n"
         "Час: {time}"
     ),

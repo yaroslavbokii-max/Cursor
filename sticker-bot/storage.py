@@ -22,8 +22,10 @@ def _now_iso():
 def load_state() -> dict:
     _ensure_dir()
     if STATE_FILE.is_file():
-        return json.loads(STATE_FILE.read_text(encoding="utf-8"))
-    return {"update_offset": 0, "sessions": {}, "submissions": []}
+        state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+        state.setdefault("sticker_requests", [])
+        return state
+    return {"update_offset": 0, "sessions": {}, "submissions": [], "sticker_requests": []}
 
 
 def save_state(state: dict):
@@ -94,6 +96,23 @@ def provider_submission_status(state, provider_id: str) -> str | None:
         if s["status"] == "pending":
             has_pending = True
     return "pending" if has_pending else None
+
+
+def add_sticker_request(state, *, chat_id, provider_id, provider_name,
+                        city, address, username) -> dict:
+    req = {
+        "id": f"stk_{len(state['sticker_requests']) + 1:04d}",
+        "chat_id": chat_id,
+        "provider_id": str(provider_id),
+        "provider_name": provider_name,
+        "city": city,
+        "address": address,
+        "username": username,
+        "created_at": _now_iso(),
+        "status": "pending_delivery",
+    }
+    state["sticker_requests"].append(req)
+    return req
 
 
 def mark_submission(state, sub_id, status: str) -> dict | None:
