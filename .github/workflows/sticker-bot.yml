@@ -1,0 +1,49 @@
+name: Sticker Bot Polling
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: sticker-bot
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sticker-bot
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: sticker-bot/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: Run bot (single poll)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: python bot.py --once
+
+      - name: Commit state changes
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "sticker-bot"
+          git config user.email "sticker-bot@github-actions"
+          git add sticker-bot/data/
+          if git diff --cached --quiet; then
+            echo "No state changes"
+          else
+            git pull --rebase origin main
+            git commit -m "bot: update state [skip ci]"
+            git push
+          fi
