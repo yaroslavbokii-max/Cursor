@@ -27,6 +27,14 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: Check secrets
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+        run: |
+          echo "TOKEN set: $([ -n "$TELEGRAM_BOT_TOKEN" ] && echo YES || echo NO)"
+          echo "ADMIN_ID set: $([ -n "$TELEGRAM_ADMIN_CHAT_ID" ] && echo YES || echo NO)"
+
       - name: Run bot (single poll)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
