@@ -1,8 +1,8 @@
 name: Sticker Bot Polling
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  # schedule disabled — bot runs locally or on Render (webhook)
+  # - cron: '*/5 * * * *'
   workflow_dispatch:
 
 concurrency:

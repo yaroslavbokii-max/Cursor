@@ -2,15 +2,15 @@
 Auto-assign UAM Jira tickets to the responsible Account Manager.
 
 Flow:
-  1. Fetch unassigned tickets from UAM board
+  1. Fetch issues with assignee is EMPTY (JQL). If API still returns an assignee, skip — do not reassign.
   2. Extract provider_id from summary/description (incl. ADF), optional custom field
   3. Query Databricks for account_manager_name
   4. Look up AM's Jira account ID (exact + fuzzy display-name match)
   5. Assign; if AM / route owner unknown → fallback (default: Joanna Lizza Ayson, configurable)
 
-Schedule via cron:
+Schedule via cron (weekdays 10:00, 14:00, 16:00 local time):
   crontab -e
-  0 9,14 * * 1-5 cd /Users/yaroslav/Desktop/cursor/databricks-dbx && /usr/bin/python3 jira_auto_assign.py >> /tmp/jira_auto_assign.log 2>&1
+  0 10,14,16 * * 1-5 cd /Users/yaroslav/Desktop/cursor/databricks-dbx && /usr/bin/python3 jira_auto_assign.py >> /tmp/jira_auto_assign.log 2>&1
 
 Env (optional, in .env):
   UAM_AUTO_ASSIGN_EXTRA_JQL   — appended to JQL (e.g. AND status = "AM Tickets")
@@ -19,17 +19,17 @@ Env (optional, in .env):
   UAM_FALLBACK_DISPLAY_NAME   — Jira display name for fallback (default Joanna Lizza Ayson)
   UAM_FALLBACK_ACCOUNT_ID     — optional accountId; if set, skips name lookup
   UAM_DRY_RUN                 — set to 1 to log actions without assigning
-  UAM_SKIP_UNKNOWN_ASSIGNEE   — set to 1 to only assign when AM / Tetiana / Anna resolves; skip others (no fallback)
+  UAM_SKIP_UNKNOWN_ASSIGNEE   — set to 1 to only assign when AM / Tetiana / Anna / Khrystyna (integration) resolves; skip others (no fallback)
   UAM_MAX_TICKET_AGE_DAYS     — only issues created within this many days (default 30). Set to 0 to disable (assign old tickets too).
   UAM_STATUS_IN               — comma-separated Jira status names to include only those columns, e.g. "All Tickets,AM TICKETS"
                               (exact spelling as in Issue → Status). Empty = all non-Done statuses. Do not duplicate status in UAM_AUTO_ASSIGN_EXTRA_JQL.
 
   Special routes (keyword → assignee + optional column transition):
-  UAM_ROUTE_RULES_ENABLED=1   — Legal/FOP → Tetiana (SIMPLY_2PRIORITY); financial/Vchasno/invoices → Anna (MOPS TICKETS)
-  UAM_ACCOUNT_ID_TETIANA / UAM_ACCOUNT_ID_ANNA — Jira accountIds (recommended); else display names resolved via search
-  UAM_DISPLAY_NAME_TETIANA / UAM_DISPLAY_NAME_ANNA — fallback for user lookup
+  UAM_ROUTE_RULES_ENABLED=1   — Legal/FOP → Tetiana (SIMPLY_2PRIORITY); integration/Poster → Khrystyna Berezna (assign only, no default column); financial → Anna (MOPS TICKETS)
+  UAM_ACCOUNT_ID_TETIANA / UAM_ACCOUNT_ID_ANNA / UAM_ACCOUNT_ID_KHRYSTYNA_INTEGRATION — Jira accountIds (recommended)
+  UAM_DISPLAY_NAME_TETIANA / UAM_DISPLAY_NAME_ANNA / UAM_DISPLAY_NAME_INTEGRATION — fallback for user lookup (integration default: Khrystyna Berezna)
   UAM_STATUS_NAME_SIMPLY2 / UAM_STATUS_NAME_MOPS — exact Jira status names for transitions
-  UAM_TRANSITION_ON_ROUTE=1   — move issue to target column after assign (default 1)
+  UAM_TRANSITION_ON_ROUTE=1   — move issue to target column after assign for Tetiana/Anna routes only (integration has no default transition)
 """
 
 from __future__ import annotations
@@ -191,11 +191,12 @@ def norm_status_name(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip().lower())
 
 
-def classify_special_route(text: str) -> Optional[Literal["simply2", "mops"]]:
+def classify_special_route(text: str) -> Optional[Literal["simply2", "integration", "mops"]]:
     """
-    Legal / FOP changes → SIMPLY2 (Tetiana). Financial, Vchasno, invoices → MOPS (Anna).
-    UA: summary/title phrases «ДУ припинення», «ДУ на зміну» → Tetiana (SIMPLY_2).
-    Order: legal/FOP signals first, then financial/MOPS (to reduce false positives).
+    Legal / FOP changes → SIMPLY2 (Tetiana). Integration / Poster → Khrystyna Berezna.
+    Financial, Vchasno, invoices → MOPS (Anna).
+    UA: «ДУ припинення», «ДУ на зміну» → Tetiana.
+    Order: legal/FOP → integration keywords → MOPS.
     """
     if not text or not str(text).strip():
         return None
@@ -223,6 +224,17 @@ def classify_special_route(text: str) -> Optional[Literal["simply2", "mops"]]:
     )
     if legal_fop:
         return "simply2"
+
+    # Інтеграція (UA/EN), Poster; «нтеграція» — типова опечатка без «І»
+    integration_kw = (
+        "інтегр" in t
+        or "нтеграція" in t
+        or "нтеграцію" in t
+        or bool(re.search(r"\bposter\b", t))
+        or bool(re.search(r"\bintegration\b", t))
+    )
+    if integration_kw:
+        return "integration"
 
     mops_finance = (
         "vchasno" in t
@@ -295,9 +307,9 @@ def transition_issue_to_status(
 
 
 def resolve_route_assignee(
-    session: requests.Session, route: Literal["simply2", "mops"]
+    session: requests.Session, route: Literal["simply2", "mops", "integration"]
 ) -> tuple[Optional[str], str]:
-    """Return (account_id, label) for Tetiana or Anna."""
+    """Return (account_id, label) for Tetiana, Anna, or Khrystyna (integration)."""
     if route == "simply2":
         aid = _ENV.get("UAM_ACCOUNT_ID_TETIANA", os.environ.get("UAM_ACCOUNT_ID_TETIANA", "")).strip()
         label = "Tetiana Bondar (legal/FOP)"
@@ -308,13 +320,26 @@ def resolve_route_assignee(
             os.environ.get("UAM_DISPLAY_NAME_TETIANA", "Tetiana Bondar"),
         ).strip()
         return lookup_jira_account(session, name), label
-    aid = _ENV.get("UAM_ACCOUNT_ID_ANNA", os.environ.get("UAM_ACCOUNT_ID_ANNA", "")).strip()
-    label = "Anna Zaritska (MOPS/finance)"
+    if route == "mops":
+        aid = _ENV.get("UAM_ACCOUNT_ID_ANNA", os.environ.get("UAM_ACCOUNT_ID_ANNA", "")).strip()
+        label = "Anna Zaritska (MOPS/finance)"
+        if aid:
+            return aid, label
+        name = _ENV.get(
+            "UAM_DISPLAY_NAME_ANNA",
+            os.environ.get("UAM_DISPLAY_NAME_ANNA", "Anna Zaritska"),
+        ).strip()
+        return lookup_jira_account(session, name), label
+    aid = _ENV.get(
+        "UAM_ACCOUNT_ID_KHRYSTYNA_INTEGRATION",
+        os.environ.get("UAM_ACCOUNT_ID_KHRYSTYNA_INTEGRATION", ""),
+    ).strip()
+    label = "Khrystyna Berezna (integration)"
     if aid:
         return aid, label
     name = _ENV.get(
-        "UAM_DISPLAY_NAME_ANNA",
-        os.environ.get("UAM_DISPLAY_NAME_ANNA", "Anna Zaritska"),
+        "UAM_DISPLAY_NAME_INTEGRATION",
+        os.environ.get("UAM_DISPLAY_NAME_INTEGRATION", "Khrystyna Berezna"),
     ).strip()
     return lookup_jira_account(session, name), label
 
@@ -334,7 +359,7 @@ def fetch_unassigned_tickets(
         f"project = {PROJECT_KEY} AND assignee is EMPTY AND status != Done "
         f"{age_clause}{status_in_jql}{extra_jql} ORDER BY created DESC"
     )
-    fields: List[str] = ["summary", "description", "status"]
+    fields: List[str] = ["summary", "description", "status", "assignee"]
     if custom_field_id:
         fields.append(custom_field_id)
 
@@ -572,11 +597,9 @@ def run() -> None:
         log.info("UAM_DRY_RUN=1 — no assignments will be made")
     if route_rules_enabled:
         log.info(
-            "Route rules: Legal/FOP → %s + %s | Finance/Vchasno → %s + %s",
+            "Route rules: Legal/FOP → %s + Tetiana | Integration/Poster → Khrystyna | Finance/Vchasno → %s + Anna",
             status_simply2,
-            "Tetiana",
             status_mops,
-            "Anna",
         )
     if skip_unknown:
         log.info("UAM_SKIP_UNKNOWN_ASSIGNEE=1 — tickets without a resolved assignee will be skipped (no fallback)")
@@ -609,9 +632,14 @@ def run() -> None:
     log.info("Fallback assignee when AM/route cannot be resolved: %s", fallback_label)
 
     ticket_data: List[dict[str, Any]] = []
+    skipped_already_assigned = 0
     for issue in tickets:
         key = issue["key"]
         fields = issue["fields"]
+        if fields.get("assignee"):
+            log.info("  %s → leave unchanged (already assigned)", key)
+            skipped_already_assigned += 1
+            continue
         summary = fields.get("summary") or ""
         desc_text = description_to_text(fields.get("description"))
         pid = extract_provider_id_from_custom_field(fields, custom_field)
@@ -630,6 +658,13 @@ def run() -> None:
                 "current_status": current_status,
             }
         )
+
+    if not ticket_data:
+        log.info(
+            "=== Done: 0 assigned (0 fallback), 0 skipped (unknown), %d unchanged (already assigned) ===",
+            skipped_already_assigned,
+        )
+        return
 
     provider_ids = [t["provider_id"] for t in ticket_data if t["provider_id"]]
     unique_ids = list(dict.fromkeys(provider_ids))
@@ -658,6 +693,12 @@ def run() -> None:
             _ENV.get(
                 "UAM_DISPLAY_NAME_ANNA",
                 os.environ.get("UAM_DISPLAY_NAME_ANNA", "Anna Zaritska"),
+            ).strip()
+        )
+        prefetch_targets.add(
+            _ENV.get(
+                "UAM_DISPLAY_NAME_INTEGRATION",
+                os.environ.get("UAM_DISPLAY_NAME_INTEGRATION", "Khrystyna Berezna"),
             ).strip()
         )
     prefetch_targets.add(fallback_label)
@@ -703,6 +744,24 @@ def run() -> None:
                 continue
             else:
                 log.warning("%s: classified as MOPS/finance but Anna not found in Jira — using AM", key)
+        elif route == "integration":
+            aid, who = resolve_route_assignee(session, "integration")
+            if aid:
+                account_id = aid
+                target_transition = None
+            elif skip_unknown:
+                log.info(
+                    "  %s → SKIP (integration — Khrystyna Berezna not found in Jira) [provider %s]",
+                    key,
+                    pid or "?",
+                )
+                skipped_n += 1
+                continue
+            else:
+                log.warning(
+                    "%s: classified as integration but Khrystyna Berezna not found in Jira — using AM",
+                    key,
+                )
 
         if not account_id:
             jira_id: Optional[str] = None
@@ -754,7 +813,13 @@ def run() -> None:
             if transition_issue_to_status(session, key, target_transition, dry_run):
                 log.info("  %s → column/status %s", key, target_transition)
 
-    log.info("=== Done: %d assigned (%d fallback), %d skipped ===", assigned, fallback_n, skipped_n)
+    log.info(
+        "=== Done: %d assigned (%d fallback), %d skipped (unknown), %d unchanged (already assigned) ===",
+        assigned,
+        fallback_n,
+        skipped_n,
+        skipped_already_assigned,
+    )
 
 
 if __name__ == "__main__":
