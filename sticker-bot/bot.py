@@ -120,7 +120,7 @@ def lookup_provider(pid: str) -> dict | None:
         try:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT provider_id, provider_name, country_code, city_id "
+                    "SELECT provider_id, provider_name, city_name, zone_name "
                     "FROM ng_delivery_spark.dim_provider_v2 "
                     f"WHERE provider_id = {int(pid)} AND country_code = 'ua' "
                     "LIMIT 1"
@@ -218,15 +218,23 @@ def _handle_provider_id(chat_id, text, session, state):
 
     if provider:
         session.update({
-            "step": "awaiting_photo",
+            "step": "confirm_provider",
+            "flow": "verify",
             "provider_id": pid,
             "provider_name": provider.get("provider_name", "—"),
-            "city": str(provider.get("city_id", "—")),
+            "city": provider.get("city_name", "—"),
+            "zone": provider.get("zone_name", "—"),
         })
         set_session(state, chat_id, session)
-        send_msg(chat_id, MSG["provider_found"].format(
-            name=session["provider_name"], city=session["city"],
-        ))
+        keyboard = {"inline_keyboard": [[
+            {"text": "Так, це мій заклад ✅", "callback_data": "confirm_pid:yes"},
+            {"text": "Ні, інший ❌", "callback_data": "confirm_pid:no"},
+        ]]}
+        send_msg(chat_id, MSG["provider_confirm"].format(
+            name=_esc(session["provider_name"]),
+            city=_esc(session["city"]),
+            zone=_esc(session["zone"]),
+        ), reply_markup=keyboard)
     elif DATABRICKS_TOKEN:
         send_msg(chat_id, MSG["provider_not_found"].format(pid=pid))
     else:
@@ -235,9 +243,10 @@ def _handle_provider_id(chat_id, text, session, state):
             "provider_id": pid,
             "provider_name": "—",
             "city": "—",
+            "zone": "—",
         })
         set_session(state, chat_id, session)
-        send_msg(chat_id, MSG["provider_accepted"].format(pid=pid))
+        send_msg(chat_id, MSG["send_photo"])
 
 
 def _handle_photo(msg, session, state):
@@ -320,22 +329,33 @@ def _handle_need_sticker_pid(chat_id, text, session, state):
     provider = lookup_provider(pid)
     if provider:
         session.update({
+            "step": "confirm_provider",
+            "flow": "sticker",
             "provider_id": pid,
             "provider_name": provider.get("provider_name", "—"),
-            "step": "need_sticker_city",
+            "city": provider.get("city_name", "—"),
+            "zone": provider.get("zone_name", "—"),
         })
+        set_session(state, chat_id, session)
+        keyboard = {"inline_keyboard": [[
+            {"text": "Так, це мій заклад ✅", "callback_data": "confirm_pid:yes"},
+            {"text": "Ні, інший ❌", "callback_data": "confirm_pid:no"},
+        ]]}
+        send_msg(chat_id, MSG["provider_confirm"].format(
+            name=_esc(session["provider_name"]),
+            city=_esc(session["city"]),
+            zone=_esc(session["zone"]),
+        ), reply_markup=keyboard)
     elif DATABRICKS_TOKEN:
         send_msg(chat_id, MSG["provider_not_found"].format(pid=pid))
-        return
     else:
         session.update({
             "provider_id": pid,
             "provider_name": "—",
             "step": "need_sticker_city",
         })
-
-    set_session(state, chat_id, session)
-    _send_city_keyboard(chat_id)
+        set_session(state, chat_id, session)
+        _send_city_keyboard(chat_id)
 
 
 def _handle_need_sticker_city_text(chat_id, text, session, state):
@@ -494,6 +514,34 @@ def _handle_callback(cb, state):
             session["step"] = "need_sticker_pid"
             set_session(state, chat_id, session)
             send_msg(chat_id, MSG["need_sticker"])
+        return
+
+    # Provider confirmation buttons
+    if data.startswith("confirm_pid:"):
+        answer = data.split(":", 1)[1]
+        answer_cb(cb_id)
+        session = get_session(state, chat_id)
+        if not session:
+            return
+
+        if answer == "yes":
+            flow = session.get("flow", "verify")
+            if flow == "sticker":
+                session["step"] = "need_sticker_city"
+                set_session(state, chat_id, session)
+                _send_city_keyboard(chat_id)
+            else:
+                session["step"] = "awaiting_photo"
+                set_session(state, chat_id, session)
+                send_msg(chat_id, MSG["send_photo"])
+        else:
+            flow = session.get("flow", "verify")
+            if flow == "sticker":
+                session["step"] = "need_sticker_pid"
+            else:
+                session["step"] = "awaiting_provider_id"
+            set_session(state, chat_id, session)
+            send_msg(chat_id, MSG["provider_wrong"])
         return
 
     # City selection buttons
