@@ -48,7 +48,8 @@ MSG = {
     ),
     "need_sticker_city": "Оберіть ваше місто:",
     "need_sticker_city_other": "Введіть назву вашого міста:",
-    "need_sticker_phone": "Введіть ваш *номер телефону* (наприклад, 0671234567):",
+    "need_sticker_phone": "Введіть *номер телефону* отримувача (наприклад, 0671234567):",
+    "need_sticker_recipient": "Введіть *ім'я та прізвище* отримувача:",
     "need_sticker_np_type": "Куди надіслати стікер?",
     "need_sticker_np_list": "Оберіть зі списку ({page}/{pages}, всього: {total}):",
     "need_sticker_np_empty": "За вашим запитом нічого не знайдено. Спробуйте інше:",
@@ -116,6 +117,7 @@ MSG = {
         "Provider: `{provider_id}`\n"
         "Назва: {provider_name}\n"
         "Місто: {city}\n"
+        "Отримувач: {recipient}\n"
         "Телефон: {phone}\n"
         "Нова Пошта: {nova_poshta}\n"
         "Від: {username}\n"

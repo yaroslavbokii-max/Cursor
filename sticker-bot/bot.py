@@ -190,6 +190,8 @@ def process_update(update: dict, state: dict):
         _handle_need_sticker_city_text(chat_id, text, session, state)
     elif step == "need_sticker_phone":
         _handle_need_sticker_phone(chat_id, text, session, state)
+    elif step == "need_sticker_recipient":
+        _handle_need_sticker_recipient(chat_id, text, session, state)
     elif step == "need_sticker_np_search":
         _handle_np_text_search(chat_id, text, session, state)
     elif step == "need_sticker_np_manual":
@@ -383,6 +385,17 @@ def _handle_need_sticker_phone(chat_id, text, session, state):
         send_msg(chat_id, "Введіть коректний номер телефону (мінімум 10 цифр):")
         return
     session["phone"] = phone
+    session["step"] = "need_sticker_recipient"
+    set_session(state, chat_id, session)
+    send_msg(chat_id, MSG["need_sticker_recipient"])
+
+
+def _handle_need_sticker_recipient(chat_id, text, session, state):
+    name = text.strip()
+    if len(name) < 3 or " " not in name:
+        send_msg(chat_id, "Введіть *ім'я та прізвище* (наприклад, Іван Петренко):")
+        return
+    session["recipient"] = name
     _finish_sticker_request(chat_id, session.get("np_selected", "—"), session, state)
 
 
@@ -461,7 +474,8 @@ def _finish_sticker_request(chat_id, nova_poshta, session, state):
         provider_id=session["provider_id"],
         provider_name=session.get("provider_name", "—"),
         city=session.get("city", "—"),
-        phone=session["phone"],
+        phone=session.get("phone", "—"),
+        recipient=session.get("recipient", "—"),
         nova_poshta=nova_poshta,
         username=username,
     )
@@ -479,6 +493,7 @@ def _notify_admin_sticker_request(req):
         provider_id=req["provider_id"],
         provider_name=_esc(req["provider_name"]),
         city=_esc(req["city"]),
+        recipient=_esc(req.get("recipient", "—")),
         phone=_esc(req["phone"]),
         nova_poshta=_esc(req["nova_poshta"]),
         username=_esc(req["username"]),

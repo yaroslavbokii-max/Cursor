@@ -99,13 +99,14 @@ def provider_submission_status(state, provider_id: str) -> str | None:
 
 
 def add_sticker_request(state, *, chat_id, provider_id, provider_name,
-                        city, phone, nova_poshta, username) -> dict:
+                        city, phone, recipient, nova_poshta, username) -> dict:
     req = {
         "id": f"stk_{len(state['sticker_requests']) + 1:04d}",
         "chat_id": chat_id,
         "provider_id": str(provider_id),
         "provider_name": provider_name,
         "city": city,
+        "recipient": recipient,
         "phone": phone,
         "nova_poshta": nova_poshta,
         "username": username,
