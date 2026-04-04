@@ -22,7 +22,7 @@ import requests
 from config import (
     TELEGRAM_BOT_TOKEN, ADMIN_CHAT_ID,
     DATABRICKS_TOKEN, DATABRICKS_HOST, DATABRICKS_HTTP_PATH,
-    WEBHOOK_URL, MSG,
+    WEBHOOK_URL, MSG, CITIES,
 )
 from storage import (
     load_state, save_state,
@@ -30,6 +30,8 @@ from storage import (
     add_submission, find_submission, mark_submission,
     provider_submission_status, add_sticker_request,
 )
+from nova_poshta import list_warehouses, TYPE_POSTOMAT, TYPE_BRANCH, PAGE_SIZE
+import math
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +40,8 @@ logging.basicConfig(
 log = logging.getLogger("sticker-bot")
 
 API = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+
+_np_cache: dict[int, list[dict]] = {}
 
 
 # ── Telegram API helpers ────────────────────────────────────────────
@@ -70,7 +74,10 @@ def answer_cb(callback_query_id, text=""):
     tg("answerCallbackQuery", callback_query_id=callback_query_id, text=text)
 
 
+_poll_backoff = 0
+
 def get_updates(offset=0, timeout=5):
+    global _poll_backoff
     try:
         r = requests.get(
             f"{API}/getUpdates",
@@ -78,9 +85,13 @@ def get_updates(offset=0, timeout=5):
             timeout=timeout + 10,
         )
         r.raise_for_status()
+        _poll_backoff = 0
         return r.json().get("result", [])
     except Exception as e:
-        log.error("getUpdates failed: %s", e)
+        _poll_backoff = min(_poll_backoff + 1, 6)
+        wait = 2 ** _poll_backoff
+        log.error("getUpdates failed (retry in %ds): %s", wait, e)
+        time.sleep(wait)
         return []
 
 
@@ -175,8 +186,14 @@ def process_update(update: dict, state: dict):
         send_msg(chat_id, MSG["already_submitted"])
     elif step == "need_sticker_pid":
         _handle_need_sticker_pid(chat_id, text, session, state)
-    elif step == "need_sticker_address":
-        _handle_need_sticker_address(chat_id, text, session, state)
+    elif step == "need_sticker_city_other":
+        _handle_need_sticker_city_text(chat_id, text, session, state)
+    elif step == "need_sticker_phone":
+        _handle_need_sticker_phone(chat_id, text, session, state)
+    elif step == "need_sticker_np_search":
+        _handle_np_text_search(chat_id, text, session, state)
+    elif step == "need_sticker_np_manual":
+        _handle_need_sticker_np_manual(chat_id, text, session, state)
 
 
 # ── Step handlers ───────────────────────────────────────────────────
@@ -280,6 +297,19 @@ def _notify_admin(sub):
 
 
 # ── "Need sticker" flow ─────────────────────────────────────────────
+# Steps: provider_id → city → phone → nova poshta branch → done
+
+def _send_city_keyboard(chat_id):
+    rows = []
+    for i in range(0, len(CITIES), 2):
+        row = [{"text": CITIES[i], "callback_data": f"city:{CITIES[i]}"}]
+        if i + 1 < len(CITIES):
+            row.append({"text": CITIES[i + 1], "callback_data": f"city:{CITIES[i + 1]}"})
+        rows.append(row)
+    rows.append([{"text": "Інше місто ✏️", "callback_data": "city:__other__"}])
+    send_msg(chat_id, MSG["need_sticker_city"],
+             reply_markup={"inline_keyboard": rows})
+
 
 def _handle_need_sticker_pid(chat_id, text, session, state):
     pid = text.strip()
@@ -292,8 +322,7 @@ def _handle_need_sticker_pid(chat_id, text, session, state):
         session.update({
             "provider_id": pid,
             "provider_name": provider.get("provider_name", "—"),
-            "city": str(provider.get("city_id", "—")),
-            "step": "need_sticker_address",
+            "step": "need_sticker_city",
         })
     elif DATABRICKS_TOKEN:
         send_msg(chat_id, MSG["provider_not_found"].format(pid=pid))
@@ -302,28 +331,118 @@ def _handle_need_sticker_pid(chat_id, text, session, state):
         session.update({
             "provider_id": pid,
             "provider_name": "—",
-            "city": "—",
-            "step": "need_sticker_address",
+            "step": "need_sticker_city",
         })
 
     set_session(state, chat_id, session)
-    send_msg(chat_id, MSG["need_sticker_address"])
+    _send_city_keyboard(chat_id)
 
 
-def _handle_need_sticker_address(chat_id, text, session, state):
-    address = text.strip()
-    if len(address) < 5:
-        send_msg(chat_id, "Будь ласка, введіть повну адресу закладу:")
+def _handle_need_sticker_city_text(chat_id, text, session, state):
+    city = text.strip()
+    if len(city) < 2:
+        send_msg(chat_id, "Будь ласка, введіть назву міста:")
+        return
+    session["city"] = city
+    _send_np_type_keyboard(chat_id, session, state)
+
+
+def _send_np_type_keyboard(chat_id, session, state):
+    session["step"] = "need_sticker_np_type"
+    set_session(state, chat_id, session)
+    keyboard = {"inline_keyboard": [[
+        {"text": "Поштомат 📦", "callback_data": "nptype:postomat"},
+        {"text": "Відділення 🏤", "callback_data": "nptype:branch"},
+    ]]}
+    send_msg(chat_id, MSG["need_sticker_np_type"], reply_markup=keyboard)
+
+
+def _handle_need_sticker_phone(chat_id, text, session, state):
+    phone = text.strip().replace(" ", "").replace("-", "")
+    if len(phone) < 10:
+        send_msg(chat_id, "Введіть коректний номер телефону (мінімум 10 цифр):")
+        return
+    session["phone"] = phone
+    _finish_sticker_request(chat_id, session.get("np_selected", "—"), session, state)
+
+
+# ── NP warehouse list with pagination ──────────────────────────────
+
+def _send_np_page(chat_id, session, state, page: int = 1, query: str = ""):
+    city = session.get("city", "")
+    wh_type = session.get("np_type_ref")
+    warehouses, total = list_warehouses(city, wh_type, page=page, query=query)
+
+    if not warehouses:
+        rows = [
+            [{"text": "🔍 Пошук за номером/адресою", "callback_data": "np:__search__"}],
+            [{"text": "✏️ Ввести вручну", "callback_data": "np:__manual__"}],
+        ]
+        send_msg(chat_id, MSG["need_sticker_np_empty"],
+                 reply_markup={"inline_keyboard": rows})
         return
 
+    total_pages = max(1, math.ceil(total / PAGE_SIZE))
+    _np_cache[chat_id] = warehouses
+    session["np_page"] = page
+    session["np_query"] = query
+    set_session(state, chat_id, session)
+
+    rows = []
+    for i, w in enumerate(warehouses):
+        label = w["short"]
+        if len(label) > 45:
+            label = label[:42] + "…"
+        rows.append([{"text": label, "callback_data": f"np:{i}"}])
+
+    nav_row = []
+    if page > 1:
+        nav_row.append({"text": "⬅️ Назад", "callback_data": f"nppage:{page - 1}"})
+    if page < total_pages:
+        nav_row.append({"text": "Далі ➡️", "callback_data": f"nppage:{page + 1}"})
+    if nav_row:
+        rows.append(nav_row)
+
+    rows.append([
+        {"text": "🔍 Пошук", "callback_data": "np:__search__"},
+        {"text": "✏️ Вручну", "callback_data": "np:__manual__"},
+    ])
+
+    header = MSG["need_sticker_np_list"].format(
+        page=page, pages=total_pages, total=total)
+    send_msg(chat_id, header, reply_markup={"inline_keyboard": rows})
+
+
+def _handle_np_text_search(chat_id, text, session, state):
+    query = text.strip()
+    if not query:
+        send_msg(chat_id, "Введіть номер або частину адреси:")
+        return
+    _send_np_page(chat_id, session, state, page=1, query=query)
+
+
+def _handle_need_sticker_np_manual(chat_id, text, session, state):
+    np_branch = text.strip()
+    if len(np_branch) < 3:
+        send_msg(chat_id, "Будь ласка, вкажіть відділення Нової Пошти:")
+        return
+    session["np_selected"] = np_branch
+    session["step"] = "need_sticker_phone"
+    set_session(state, chat_id, session)
+    send_msg(chat_id, MSG["need_sticker_phone"])
+
+
+def _finish_sticker_request(chat_id, nova_poshta, session, state):
+    _np_cache.pop(chat_id, None)
     username = session.get("username", "—")
     req = add_sticker_request(
         state,
         chat_id=chat_id,
         provider_id=session["provider_id"],
-        provider_name=session["provider_name"],
-        city=session["city"],
-        address=address,
+        provider_name=session.get("provider_name", "—"),
+        city=session.get("city", "—"),
+        phone=session["phone"],
+        nova_poshta=nova_poshta,
         username=username,
     )
 
@@ -340,7 +459,8 @@ def _notify_admin_sticker_request(req):
         provider_id=req["provider_id"],
         provider_name=_esc(req["provider_name"]),
         city=_esc(req["city"]),
-        address=_esc(req["address"]),
+        phone=_esc(req["phone"]),
+        nova_poshta=_esc(req["nova_poshta"]),
         username=_esc(req["username"]),
         time=req["created_at"][:16].replace("T", " "),
     )
@@ -362,17 +482,89 @@ def _handle_callback(cb, state):
         if not session:
             return
 
+        username_raw = cb["from"].get("username", "")
+        first_name = cb["from"].get("first_name", "")
+        session["username"] = f"@{username_raw}" if username_raw else first_name
+
         if answer == "yes":
             session["step"] = "awaiting_provider_id"
             set_session(state, chat_id, session)
             send_msg(chat_id, MSG["enter_provider_id"])
         else:
-            username_raw = cb["from"].get("username", "")
-            first_name = cb["from"].get("first_name", "")
             session["step"] = "need_sticker_pid"
-            session["username"] = f"@{username_raw}" if username_raw else first_name
             set_session(state, chat_id, session)
             send_msg(chat_id, MSG["need_sticker"])
+        return
+
+    # City selection buttons
+    if data.startswith("city:"):
+        city = data.split(":", 1)[1]
+        answer_cb(cb_id)
+        session = get_session(state, chat_id)
+        if not session:
+            return
+
+        if city == "__other__":
+            session["step"] = "need_sticker_city_other"
+            set_session(state, chat_id, session)
+            send_msg(chat_id, MSG["need_sticker_city_other"])
+        else:
+            session["city"] = city
+            _send_np_type_keyboard(chat_id, session, state)
+        return
+
+    # NP type selection (postomat / branch)
+    if data.startswith("nptype:"):
+        choice = data.split(":", 1)[1]
+        answer_cb(cb_id)
+        session = get_session(state, chat_id)
+        if not session:
+            return
+
+        session["np_type_ref"] = TYPE_POSTOMAT if choice == "postomat" else TYPE_BRANCH
+        set_session(state, chat_id, session)
+        _send_np_page(chat_id, session, state, page=1)
+        return
+
+    # NP pagination
+    if data.startswith("nppage:"):
+        page = int(data.split(":", 1)[1])
+        answer_cb(cb_id)
+        session = get_session(state, chat_id)
+        if not session:
+            return
+        query = session.get("np_query", "")
+        _send_np_page(chat_id, session, state, page=page, query=query)
+        return
+
+    # Nova Poshta warehouse selection buttons
+    if data.startswith("np:"):
+        choice = data.split(":", 1)[1]
+        answer_cb(cb_id)
+        session = get_session(state, chat_id)
+        if not session:
+            return
+
+        if choice == "__search__":
+            session["step"] = "need_sticker_np_search"
+            set_session(state, chat_id, session)
+            send_msg(chat_id,
+                     "🔍 Введіть *номер* або *частину адреси* відділення:")
+        elif choice == "__manual__":
+            session["step"] = "need_sticker_np_manual"
+            set_session(state, chat_id, session)
+            send_msg(chat_id, MSG["need_sticker_np_fallback"])
+        else:
+            idx = int(choice)
+            results = _np_cache.get(chat_id, [])
+            if idx < len(results):
+                session["np_selected"] = results[idx]["description"]
+                session["step"] = "need_sticker_phone"
+                set_session(state, chat_id, session)
+                _np_cache.pop(chat_id, None)
+                send_msg(chat_id, MSG["need_sticker_phone"])
+            else:
+                send_msg(chat_id, "Помилка вибору. Спробуйте /start")
         return
 
     # Approve / Reject buttons
