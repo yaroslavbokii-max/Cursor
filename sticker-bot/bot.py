@@ -328,6 +328,16 @@ def _handle_need_sticker_pid(chat_id, text, session, state):
         send_msg(chat_id, "Provider ID має бути числом. Спробуйте ще раз:")
         return
 
+    existing = provider_submission_status(state, pid)
+    if existing == "approved":
+        send_msg(chat_id, MSG["already_approved"].format(pid=pid))
+        clear_session(state, chat_id)
+        return
+    if existing == "pending":
+        send_msg(chat_id, MSG["already_pending"].format(pid=pid))
+        clear_session(state, chat_id)
+        return
+
     provider = lookup_provider(pid)
     if provider:
         session.update({
