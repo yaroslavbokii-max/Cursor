@@ -36,8 +36,10 @@ _cloud_secrets_to_env()
 import pandas as pd
 
 from config import (
+    BUSINESS_SEGMENT_V2_OPTIONS,
     DEFAULT_PARTNER_TABLE_LIMIT,
     DEFAULT_REGION_COUNTRIES,
+    TOP_BRANDS_BY_BOLT_LIMIT,
     all_selectable_country_codes,
     country_option_label,
 )
@@ -47,6 +49,7 @@ from data import (
     fetch_providers_by_brand,
     fetch_provider_zones_in_city,
     fetch_region_total,
+    fetch_top_brands_by_bolt_spend,
     fetch_ulc_activation_by_country,
 )
 
@@ -197,7 +200,13 @@ if d_start > d_end:
 start_s = d_start.isoformat()
 end_s = d_end.isoformat()
 
-col_a, col_b = st.columns(2)
+st.subheader("Country detail")
+st.caption(
+    "Metrics and drill-down use **`dim_provider_v2.business_segment_v2`** "
+    "(SMB / MM / ENT). **ALL** = no segment filter."
+)
+
+col_a, col_b, col_c = st.columns([1, 1.2, 0.8])
 with col_a:
     st.caption(f"**Selected:** {d_start.strftime('%d/%m/%Y')} — {d_end.strftime('%d/%m/%Y')}")
 with col_b:
@@ -207,6 +216,24 @@ with col_b:
         default=list(DEFAULT_REGION_COUNTRIES),
         format_func=country_option_label,
     )
+with col_c:
+    segment_v2 = st.selectbox(
+        "Business segment v2",
+        options=list(BUSINESS_SEGMENT_V2_OPTIONS),
+        index=0,
+        help="Filter providers (and orders joined through them) to this segment.",
+    )
+
+_prev_seg = st.session_state.get("ui_segment_v2")
+if _prev_seg is not None and _prev_seg != segment_v2:
+    st.session_state.drill_brands_df = None
+    st.session_state.drill_top20_df = None
+    st.session_state.drill_providers_df = None
+    st.session_state.drill_cities_df = None
+    st.session_state.drill_zones_df = None
+    st.session_state.drill_cities_cache = None
+    st.session_state.drill_zones_cache = None
+st.session_state.ui_segment_v2 = segment_v2
 
 run = st.button("Refresh data", type="primary")
 
@@ -222,16 +249,22 @@ if "prev_period_label" not in st.session_state:
 if run and countries:
     with st.spinner("Querying Databricks…"):
         st.session_state.last_df = fetch_ulc_activation_by_country(
-            countries, start_s, end_s
+            countries, start_s, end_s, business_segment_v2=segment_v2
         )
-        st.session_state.last_total = fetch_region_total(countries, start_s, end_s)
+        st.session_state.last_total = fetch_region_total(
+            countries, start_s, end_s, business_segment_v2=segment_v2
+        )
         p_start, p_end = _previous_period_same_length(d_start, d_end)
         st.session_state.last_df_prev = fetch_ulc_activation_by_country(
-            countries, p_start.isoformat(), p_end.isoformat()
+            countries,
+            p_start.isoformat(),
+            p_end.isoformat(),
+            business_segment_v2=segment_v2,
         )
         st.session_state.prev_period_label = (
             f"{p_start.strftime('%d/%m/%Y')} — {p_end.strftime('%d/%m/%Y')}"
         )
+        st.session_state.last_query_segment_v2 = segment_v2
 elif run and not countries:
     st.warning("Select at least one country.")
 
@@ -243,6 +276,8 @@ if df is not None and total is not None and len(total) > 0:
     m = float(total.iloc[0]["merchant_eur"])
     b = float(total.iloc[0]["bolt_eur"])
     pct = total.iloc[0]["ulc_activation_cost_share_pct"]
+    _lq_seg = st.session_state.get("last_query_segment_v2", "ALL")
+    st.caption(f"**Segment filter (this load):** {_lq_seg}")
 
     k1, k2, k3 = st.columns(3)
     k1.metric("Region: Merchant €", f"{m:,.2f}".replace(",", " "))
@@ -301,7 +336,8 @@ else:
 st.divider()
 st.subheader("Drill-down: brand → partner → city → zone")
 st.caption(
-    "**1)** Brands — aggregate on `brand_name` / `vendor_name` from `dim_provider_v2`. "
+    "**1)** Brands — aggregate on `brand_name` / `vendor_name` from `dim_provider_v2` "
+    "(same **Business segment v2** as in Country detail). "
     "**2)** Partners — individual `provider_id` within the brand. "
     "**3)** **Cities** — all brand outlets in the country (GMV / ULC sums per `city_id`). "
     "**4)** **Zones** — selected outlet + city (`dim_order_delivery`; first load up to ~1 min)."
@@ -339,6 +375,8 @@ if "drill_cities_df" not in st.session_state:
     st.session_state.drill_cities_df = None
 if "drill_zones_df" not in st.session_state:
     st.session_state.drill_zones_df = None
+if "drill_top20_df" not in st.session_state:
+    st.session_state.drill_top20_df = None
 
 if load_brands:
     with st.spinner("Loading brands…"):
@@ -347,6 +385,14 @@ if load_brands:
             start_s,
             end_s,
             limit=int(partner_limit),
+            business_segment_v2=segment_v2,
+        )
+        st.session_state.drill_top20_df = fetch_top_brands_by_bolt_spend(
+            partner_country,
+            start_s,
+            end_s,
+            limit=TOP_BRANDS_BY_BOLT_LIMIT,
+            business_segment_v2=segment_v2,
         )
         st.session_state.drill_providers_df = None
         st.session_state.drill_cities_df = None
@@ -359,9 +405,15 @@ if brands_df is not None:
     if brands_df.empty:
         st.warning("No brand data for this period / country.")
     else:
+        _bs_b = (
+            brands_df["business_segment_v2"].fillna("—").astype(str).replace({"nan": "—"})
+            if "business_segment_v2" in brands_df.columns
+            else pd.Series(["—"] * len(brands_df), index=brands_df.index)
+        )
         disp_b = pd.DataFrame(
             {
                 "Brand": brands_df["brand_name"],
+                "Business segment v2": _bs_b,
                 "GMV €": brands_df["gmv_eur"],
                 "ULC act. Merchant €": brands_df["ulc_activation_merchant_eur"],
                 "ULC act. Bolt €": brands_df["ulc_activation_bolt_eur"],
@@ -370,7 +422,34 @@ if brands_df is not None:
                 ),
             }
         )
+        st.caption(
+            f"Sorted by **GMV** (top {int(partner_limit)}). Segment filter: **{segment_v2}**."
+        )
         st.dataframe(disp_b, use_container_width=True, hide_index=True)
+
+        top20_df = st.session_state.drill_top20_df
+        if top20_df is not None and not top20_df.empty:
+            st.subheader(
+                f"Top {TOP_BRANDS_BY_BOLT_LIMIT} brands by ULC Bolt spend (same country & segment)"
+            )
+            _bs_t = (
+                top20_df["business_segment_v2"].fillna("—").astype(str).replace({"nan": "—"})
+                if "business_segment_v2" in top20_df.columns
+                else pd.Series(["—"] * len(top20_df), index=top20_df.index)
+            )
+            disp_t20 = pd.DataFrame(
+                {
+                    "Brand": top20_df["brand_name"],
+                    "Business segment v2": _bs_t,
+                    "GMV €": top20_df["gmv_eur"],
+                    "ULC act. Merchant €": top20_df["ulc_activation_merchant_eur"],
+                    "ULC act. Bolt €": top20_df["ulc_activation_bolt_eur"],
+                    "Cost share %": top20_df["ulc_activation_cost_share_pct"].map(
+                        lambda x: f"{x:.2f}%" if pd.notna(x) else "—"
+                    ),
+                }
+            )
+            st.dataframe(disp_t20, use_container_width=True, hide_index=True)
 
         brand_pick = st.selectbox(
             "2. Select brand",
@@ -387,6 +466,7 @@ if brands_df is not None:
                     start_s,
                     end_s,
                     limit=int(partner_limit),
+                    business_segment_v2=segment_v2,
                 )
                 st.session_state.drill_cities_df = None
                 st.session_state.drill_zones_df = None
@@ -404,6 +484,11 @@ if providers_df is not None:
                 "Provider ID": providers_df["provider_id"].map(
                     lambda x: str(int(x)) if pd.notna(x) else "—"
                 ),
+                "Business segment v2": (
+                    providers_df["business_segment_v2"].fillna("—").astype(str).replace({"nan": "—"})
+                    if "business_segment_v2" in providers_df.columns
+                    else pd.Series(["—"] * len(providers_df), index=providers_df.index)
+                ),
                 "GMV €": providers_df["gmv_eur"],
                 "ULC act. Merchant €": providers_df["ulc_activation_merchant_eur"],
                 "ULC act. Bolt €": providers_df["ulc_activation_bolt_eur"],
@@ -415,7 +500,13 @@ if providers_df is not None:
         st.dataframe(disp_pr, use_container_width=True, hide_index=True)
 
         _brand_for_cities = str(st.session_state.get("drill_brand_pick", "")).strip()
-        _cities_cache_key = (_brand_for_cities, start_s, end_s, partner_country)
+        _cities_cache_key = (
+            _brand_for_cities,
+            start_s,
+            end_s,
+            partner_country,
+            segment_v2,
+        )
         if _brand_for_cities and st.session_state.get(
             "drill_cities_cache"
         ) != _cities_cache_key:
@@ -425,6 +516,7 @@ if providers_df is not None:
                     _brand_for_cities,
                     start_s,
                     end_s,
+                    business_segment_v2=segment_v2,
                 )
             st.session_state.drill_cities_cache = _cities_cache_key
             st.session_state.drill_zones_df = None

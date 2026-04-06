@@ -57,5 +57,12 @@ def all_selectable_country_codes() -> list[str]:
 # Bolt ULC activation in the mart = spend_objective 'activation' (not sp_activation)
 SPEND_OBJECTIVE_ACTIVATION = "activation"
 
+# dim_provider_v2.business_segment_v2 — filter providers (case-insensitive in SQL)
+BUSINESS_SEGMENT_V2_ALL = "ALL"
+BUSINESS_SEGMENT_V2_OPTIONS: tuple[str, ...] = ("ALL", "SMB", "MM", "ENT")
+
+# Top-N brands ranked by ULC activation Bolt spend (drill-down country)
+TOP_BRANDS_BY_BOLT_LIMIT = 20
+
 # Max rows in brand/partner tables (safety cap)
 DEFAULT_PARTNER_TABLE_LIMIT = 2000
