@@ -19,15 +19,16 @@ Env (optional, in .env):
   UAM_FALLBACK_DISPLAY_NAME   — Jira display name for fallback (default Joanna Lizza Ayson)
   UAM_FALLBACK_ACCOUNT_ID     — optional accountId; if set, skips name lookup
   UAM_DRY_RUN                 — set to 1 to log actions without assigning
-  UAM_SKIP_UNKNOWN_ASSIGNEE   — set to 1 to only assign when AM / Tetiana / Anna / Khrystyna (integration) resolves; skip others (no fallback)
+  UAM_SKIP_UNKNOWN_ASSIGNEE   — set to 1 to only assign when AM / Tetiana / Anna / Khrystyna / Hanna (McDonald's) resolves; skip others (no fallback)
   UAM_MAX_TICKET_AGE_DAYS     — only issues created within this many days (default 30). Set to 0 to disable (assign old tickets too).
   UAM_STATUS_IN               — comma-separated Jira status names to include only those columns, e.g. "All Tickets,AM TICKETS"
                               (exact spelling as in Issue → Status). Empty = all non-Done statuses. Do not duplicate status in UAM_AUTO_ASSIGN_EXTRA_JQL.
+  UAM_STATUS_SORT_ORDER       — optional comma-separated status names = processing order (board columns). Empty = sort alphabetically by status, then newest created first.
 
   Special routes (keyword → assignee + optional column transition):
-  UAM_ROUTE_RULES_ENABLED=1   — Legal/FOP → Tetiana (SIMPLY_2PRIORITY); integration/Poster → Khrystyna Berezna (assign only, no default column); financial → Anna (MOPS TICKETS)
-  UAM_ACCOUNT_ID_TETIANA / UAM_ACCOUNT_ID_ANNA / UAM_ACCOUNT_ID_KHRYSTYNA_INTEGRATION — Jira accountIds (recommended)
-  UAM_DISPLAY_NAME_TETIANA / UAM_DISPLAY_NAME_ANNA / UAM_DISPLAY_NAME_INTEGRATION — fallback for user lookup (integration default: Khrystyna Berezna)
+  UAM_ROUTE_RULES_ENABLED=1   — Legal/FOP → Tetiana; McDonald's keywords → Hanna Ruda; integration/Poster → Khrystyna; financial → Anna (MOPS)
+  UAM_ACCOUNT_ID_TETIANA / UAM_ACCOUNT_ID_ANNA / UAM_ACCOUNT_ID_KHRYSTYNA_INTEGRATION / UAM_ACCOUNT_ID_MCDONALDS_AM — Jira accountIds (recommended)
+  UAM_DISPLAY_NAME_TETIANA / UAM_DISPLAY_NAME_ANNA / UAM_DISPLAY_NAME_INTEGRATION / UAM_DISPLAY_NAME_MCDONALDS_AM — fallback for user lookup (McDonald's AM default: Hanna Ruda)
   UAM_STATUS_NAME_SIMPLY2 / UAM_STATUS_NAME_MOPS — exact Jira status names for transitions
   UAM_TRANSITION_ON_ROUTE=1   — move issue to target column after assign for Tetiana/Anna routes only (integration has no default transition)
 """
@@ -191,12 +192,13 @@ def norm_status_name(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip().lower())
 
 
-def classify_special_route(text: str) -> Optional[Literal["simply2", "integration", "mops"]]:
+def classify_special_route(text: str) -> Optional[Literal["simply2", "integration", "mcdonalds", "mops"]]:
     """
     Legal / FOP changes → SIMPLY2 (Tetiana). Integration / Poster → Khrystyna Berezna.
+    McDonald's (brand in text) → Hanna Ruda (UA AM for the chain).
     Financial, Vchasno, invoices → MOPS (Anna).
     UA: «ДУ припинення», «ДУ на зміну» → Tetiana.
-    Order: legal/FOP → integration keywords → MOPS.
+    Order: legal/FOP → integration → McDonald's → MOPS.
     """
     if not text or not str(text).strip():
         return None
@@ -236,6 +238,16 @@ def classify_special_route(text: str) -> Optional[Literal["simply2", "integratio
     if integration_kw:
         return "integration"
 
+    # McDonald's — Hanna Ruda (account manager); UA + EN brand mentions
+    mcd_kw = (
+        "макдональд" in t
+        or "mcdonald" in t
+        or bool(re.search(r"\bmcds\b", t))
+        or bool(re.search(r"\bmcd\b", t))
+    )
+    if mcd_kw:
+        return "mcdonalds"
+
     mops_finance = (
         "vchasno" in t
         or "вчасно" in t
@@ -265,6 +277,52 @@ def get_current_status_name(fields: dict) -> str:
     if isinstance(st, dict):
         return (st.get("name") or "").strip()
     return ""
+
+
+def _issue_created_ts(issue: dict) -> float:
+    """Parse Jira created (ISO) for sorting; newest = larger timestamp."""
+    raw = (issue.get("fields") or {}).get("created")
+    if not raw:
+        return 0.0
+    s = str(raw).strip()
+    try:
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        else:
+            m = re.search(r"([+-])(\d{2})(\d{2})$", s)
+            if m:
+                sign, hh, mm = m.group(1), m.group(2), m.group(3)
+                s = s[: m.start()] + f"{sign}{hh}:{mm}"
+        return datetime.fromisoformat(s).timestamp()
+    except Exception:
+        return 0.0
+
+
+def sort_issues_by_status(issues: list[dict], status_order_csv: str) -> list[dict]:
+    """
+    Order issues by Jira status (column): if status_order_csv is set, use that
+    sequence (exact names as in Jira, matched case-insensitively after norm); else
+    alphabetical by status. Within the same status, newest created first.
+    """
+    if not issues:
+        return issues
+    order_raw = (status_order_csv or "").strip()
+    if order_raw:
+        names = [x.strip() for x in order_raw.split(",") if x.strip()]
+        idx = {norm_status_name(n): i for i, n in enumerate(names)}
+
+        def key_ordered(i: dict) -> tuple:
+            st = norm_status_name(get_current_status_name(i.get("fields") or {}))
+            primary = idx.get(st, 10_000)
+            return (primary, st, -_issue_created_ts(i))
+
+        return sorted(issues, key=key_ordered)
+
+    def key_alpha(i: dict) -> tuple:
+        st = norm_status_name(get_current_status_name(i.get("fields") or {}))
+        return (st, -_issue_created_ts(i))
+
+    return sorted(issues, key=key_alpha)
 
 
 def transition_issue_to_status(
@@ -307,9 +365,9 @@ def transition_issue_to_status(
 
 
 def resolve_route_assignee(
-    session: requests.Session, route: Literal["simply2", "mops", "integration"]
+    session: requests.Session, route: Literal["simply2", "mops", "integration", "mcdonalds"]
 ) -> tuple[Optional[str], str]:
-    """Return (account_id, label) for Tetiana, Anna, or Khrystyna (integration)."""
+    """Return (account_id, label) for Tetiana, Anna, Khrystyna (integration), or Hanna (McDonald's)."""
     if route == "simply2":
         aid = _ENV.get("UAM_ACCOUNT_ID_TETIANA", os.environ.get("UAM_ACCOUNT_ID_TETIANA", "")).strip()
         label = "Tetiana Bondar (legal/FOP)"
@@ -328,6 +386,19 @@ def resolve_route_assignee(
         name = _ENV.get(
             "UAM_DISPLAY_NAME_ANNA",
             os.environ.get("UAM_DISPLAY_NAME_ANNA", "Anna Zaritska"),
+        ).strip()
+        return lookup_jira_account(session, name), label
+    if route == "mcdonalds":
+        aid = _ENV.get(
+            "UAM_ACCOUNT_ID_MCDONALDS_AM",
+            os.environ.get("UAM_ACCOUNT_ID_MCDONALDS_AM", ""),
+        ).strip()
+        label = "Hanna Ruda (McDonald's)"
+        if aid:
+            return aid, label
+        name = _ENV.get(
+            "UAM_DISPLAY_NAME_MCDONALDS_AM",
+            os.environ.get("UAM_DISPLAY_NAME_MCDONALDS_AM", "Hanna Ruda"),
         ).strip()
         return lookup_jira_account(session, name), label
     aid = _ENV.get(
@@ -351,6 +422,7 @@ def fetch_unassigned_tickets(
     custom_field_id: Optional[str],
     max_age_days: int,
     status_in_jql: str,
+    status_sort_order: str,
 ) -> list[dict]:
     age_clause = ""
     if max_age_days > 0:
@@ -359,7 +431,7 @@ def fetch_unassigned_tickets(
         f"project = {PROJECT_KEY} AND assignee is EMPTY AND status != Done "
         f"{age_clause}{status_in_jql}{extra_jql} ORDER BY created DESC"
     )
-    fields: List[str] = ["summary", "description", "status", "assignee"]
+    fields: List[str] = ["summary", "description", "status", "assignee", "created"]
     if custom_field_id:
         fields.append(custom_field_id)
 
@@ -367,7 +439,8 @@ def fetch_unassigned_tickets(
     body = {"jql": jql.strip(), "maxResults": max_results, "fields": fields}
     resp = session.post(url, json=body)
     resp.raise_for_status()
-    return resp.json().get("issues", [])
+    issues = resp.json().get("issues") or []
+    return sort_issues_by_status(issues, status_sort_order)
 
 
 def _parse_int_from_jira_field(val: Any) -> Optional[int]:
@@ -591,13 +664,14 @@ def run() -> None:
     skip_unknown = _env_bool("UAM_SKIP_UNKNOWN_ASSIGNEE", False)
     max_age_days = _env_int("UAM_MAX_TICKET_AGE_DAYS", 30)
     status_in_jql = _build_status_in_jql()
+    status_sort_order = _ENV.get("UAM_STATUS_SORT_ORDER", os.environ.get("UAM_STATUS_SORT_ORDER", "")).strip()
 
     log.info("=== UAM Auto-Assign started at %s ===", datetime.now().strftime("%Y-%m-%d %H:%M"))
     if dry_run:
         log.info("UAM_DRY_RUN=1 — no assignments will be made")
     if route_rules_enabled:
         log.info(
-            "Route rules: Legal/FOP → %s + Tetiana | Integration/Poster → Khrystyna | Finance/Vchasno → %s + Anna",
+            "Route rules: Legal/FOP → %s + Tetiana | McDonald's → Hanna | Integration/Poster → Khrystyna | Finance → %s + Anna",
             status_simply2,
             status_mops,
         )
@@ -612,10 +686,17 @@ def run() -> None:
             "UAM_STATUS_IN — only these statuses:%s",
             _ENV.get("UAM_STATUS_IN", os.environ.get("UAM_STATUS_IN", "")).strip(),
         )
+    if status_sort_order:
+        log.info(
+            "UAM_STATUS_SORT_ORDER — process tickets in this column order: %s",
+            status_sort_order,
+        )
+    else:
+        log.info("Issue order: by status name (A→Z), then created (newest first) within each status")
     session = jira_session()
 
     tickets = fetch_unassigned_tickets(
-        session, extra_jql, max_issues, custom_field, max_age_days, status_in_jql
+        session, extra_jql, max_issues, custom_field, max_age_days, status_in_jql, status_sort_order
     )
     log.info(
         "Found %d unassigned tickets (excl. Done)%s%s%s",
@@ -701,6 +782,12 @@ def run() -> None:
                 os.environ.get("UAM_DISPLAY_NAME_INTEGRATION", "Khrystyna Berezna"),
             ).strip()
         )
+        prefetch_targets.add(
+            _ENV.get(
+                "UAM_DISPLAY_NAME_MCDONALDS_AM",
+                os.environ.get("UAM_DISPLAY_NAME_MCDONALDS_AM", "Hanna Ruda"),
+            ).strip()
+        )
     prefetch_targets.add(fallback_label)
 
     log.info("Prefetching %d unique Jira users...", len(prefetch_targets))
@@ -760,6 +847,24 @@ def run() -> None:
             else:
                 log.warning(
                     "%s: classified as integration but Khrystyna Berezna not found in Jira — using AM",
+                    key,
+                )
+        elif route == "mcdonalds":
+            aid, who = resolve_route_assignee(session, "mcdonalds")
+            if aid:
+                account_id = aid
+                target_transition = None
+            elif skip_unknown:
+                log.info(
+                    "  %s → SKIP (McDonald's — Hanna Ruda not found in Jira) [provider %s]",
+                    key,
+                    pid or "?",
+                )
+                skipped_n += 1
+                continue
+            else:
+                log.warning(
+                    "%s: classified as McDonald's but Hanna Ruda not found in Jira — using AM from data",
                     key,
                 )
 
