@@ -27,6 +27,12 @@ def _load_token():
     token = os.environ.get("DATABRICKS_TOKEN", "").strip().strip('"').strip("'")
     if token:
         return token
+    if os.environ.get("GITHUB_ACTIONS", "").lower() == "true":
+        raise RuntimeError(
+            "DATABRICKS_TOKEN is empty or unset. In GitHub: repo Settings → Secrets and variables → "
+            "Actions → New repository secret named exactly DATABRICKS_TOKEN (your Databricks PAT). "
+            "Then re-run the workflow."
+        )
     env_path = Path(__file__).parent / ".env"
     if not env_path.is_file():
         raise RuntimeError(
