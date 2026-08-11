@@ -7,3 +7,6 @@
 __pycache__/
 *.pyc
 node_modules/
+
+# Python virtual environment (created by dev setup)
+.venv/
