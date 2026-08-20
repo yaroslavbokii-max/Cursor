@@ -31,8 +31,8 @@ const weeklyGmvShare = [
 ];
 
 const segmentMargin = [
-  { segment: "SMB", margin: 2.54, tone: "success" as const },
-  { segment: "Mid-market", margin: 1.89, tone: "success" as const },
+  { segment: "Малі ресторани", margin: 2.54, tone: "success" as const },
+  { segment: "Середні мережі", margin: 1.89, tone: "success" as const },
   { segment: "McDonald's", margin: 0.07, tone: "warning" as const },
   { segment: "KFC", margin: -0.26, tone: "danger" as const },
 ];
@@ -42,54 +42,55 @@ export default function BoltPlusQ4GrowthStrategy() {
     <Stack gap={24}>
       <Stack gap={8}>
         <Row gap={8} align="center">
-          <H1>Bolt+ Q4: план росту частки GMV в Україні</H1>
+          <H1>Bolt+ Q4: як повернути і зростити частку обороту</H1>
           <Pill tone="info" active>
             Окремо від MOV-кейсу
           </Pill>
         </Row>
         <Text tone="secondary">
-          Запит Viacheslav Levchenko: не одна кампанія, а система з чотирьох
-          двигунів — Visa/банки, SMB/MM, McD/KFC commercial reset і Marketing.
-          Ціль Q4: підняти частку обороту від підписників Bolt+ з ~15,5% до
-          19–20%, одночасно покращивши mix партнерів і економіку.
+          Запит від Viacheslav: не одна рекламна кампанія, а чотири окремі
+          напрямки роботи. Головна метрика — яка частка всього обороту їжі в
+          Україні йде через підписників Bolt+. Зараз це ~15,5%. Ціль до кінця
+          року — 19–20%.
         </Text>
       </Stack>
 
-      <Callout tone="info" title="Головна думка">
-        Merchant coverage уже ~78% — це не головний bottleneck. Проблема в
-        acquisition, activation і mix: McD+KFC дають ~42% Plus-замовлень, але
-        margin proxy на замовлення там €0,07 і −€0,26. SMB/MM дають €2,54 і
-        €1,89. Q4 = партнер оплачує acquisition (Visa), локальні партнери
-        активують прибутковий selection (SMB/MM), McD/KFC або інвестують, або
-        не отримують додаткових субсидій, а Marketing масштабує вже готову
-        цінність — не порожню підписку.
+      <Callout tone="info" title="Коротко — про що весь план">
+        Ресторани до Bolt+ вже підключили (~78%) — це не головна проблема.
+        Проблема в трьох речах: мало нових підписників, мало замовлень у тих,
+        хто підписався, і поганий mix — McDonald's і KFC дають 42% Plus-замовлень,
+        але на кожному такому замовленні ми майже нічого не заробляємо (€0,07 і
+        −€0,26). Малі локальні ресторани дають €2,54 і €1,89 на замовлення.
+        План Q4: банк/Visa приводить нових підписників за свій рахунок; малі
+        ресторани дають ексклюзивні пропозиції і заробляють разом з нами;
+        McD/KFC або платять більше, або не отримують додаткових знижок; маркетинг
+        рекламує вже готову цінність, а не «порожню» підписку.
       </Callout>
 
-      <H2>1. Baseline і target bridge</H2>
-      <Text tone="secondary">
+      <H2>1. Звідки стартуємо і куди хочемо прийти</H2>
+      <Text>
         <Pill tone="success" active>
-          DBX fact
+          Факт з Databricks
         </Pill>{" "}
-        Джерела: fact_delivery_country_weekly, fact_order_delivery,
-        fact_user_subscriptions · UA · food + 3P stores · червень–серпень 2026.
+        Дані по Україні, ресторани + магазини, червень–серпень 2026.
       </Text>
       <Grid columns={4} gap={12}>
-        <Stat value="15,5%" label="Bolt+ GMV share зараз (avg останніх 8 тиж.)" tone="warning" />
-        <Stat value="19,8%" label="GMV share до підвищення MOV (pre 7w)" tone="info" />
-        <Stat value="€9,3 млн" label="Загальний GMV / місяць" />
-        <Stat value="€93 тис." label="1 п.п. частки ≈ Bolt+ GMV / місяць" />
+        <Stat value="15,5%" label="Частка обороту від Bolt+ зараз" tone="warning" />
+        <Stat value="19,8%" label="Було до підвищення MOV" tone="info" />
+        <Stat value="€9,3 млн" label="Весь оборот їжі / місяць" />
+        <Stat value="€93 тис." label="Кожен +1% частки ≈ стільки Bolt+ GMV" />
       </Grid>
       <Grid columns={4} gap={12}>
-        <Stat value="~21 тис." label="Plus-замовлень / повний тиждень" />
-        <Stat value="~9,5 тис." label="Активних Plus-користувачів / тиждень" />
-        <Stat value="1,4–1,6 тис." label="Нових trial / тиждень (базовий темп)" tone="warning" />
-        <Stat value="2,24" label="Plus-замовлень на активного користувача / тиждень" />
+        <Stat value="~21 тис." label="Plus-замовлень на тиждень" />
+        <Stat value="~9,5 тис." label="Активних підписників на тиждень" />
+        <Stat value="1,4–1,6 тис." label="Нових пробних підписок / тиждень" tone="warning" />
+        <Stat value="2,24" label="Замовлень на одного підписника / тиждень" />
       </Grid>
       <LineChart
         categories={weeklyGmvShare.map((d) => d.w)}
         series={[
           {
-            name: "Частка GMV від Bolt+ (%)",
+            name: "Частка обороту від Bolt+ (%)",
             data: weeklyGmvShare.map((d) => d.share),
             tone: "warning",
           },
@@ -97,42 +98,42 @@ export default function BoltPlusQ4GrowthStrategy() {
         height={220}
         beginAtZero={false}
         referenceLines={[
-          { value: 19.8, label: "Pre-MOV 19,8%", tone: "info" },
-          { value: 20, label: "Q4 target 20%", tone: "success" },
-          { value: 15.5, label: "Baseline 15,5%", tone: "danger" },
+          { value: 19.8, label: "Було 19,8%", tone: "info" },
+          { value: 20, label: "Ціль Q4: 20%", tone: "success" },
+          { value: 15.5, label: "Зараз 15,5%", tone: "danger" },
         ]}
       />
       <Table
-        headers={["Сценарій Q4", "GMV share", "Δ vs baseline", "Plus GMV / місяць", "Що це означає"]}
+        headers={["Сценарій", "Частка обороту", "На скільки вище зараз", "Bolt+ GMV / місяць", "Що для цього треба"]}
         columnAlign={["left", "right", "right", "right", "left"]}
         rowTone={["warning", "neutral", "success", "success", "info"]}
         rows={[
-          ["Baseline (зараз)", "15,5%", "—", "~€1,44 млн", "Статус-кво без нових двигунів"],
-          ["Conservative", "17,5–18%", "+2,0–2,5 п.п.", "~€1,63–1,67 млн", "Visa pilot + обережний SMB uplift"],
-          ["Base target", "19–20%", "+3,5–4,5 п.п.", "~€1,77–1,86 млн", "Visa scale + SMB activation + marketing"],
-          ["Upside", "21–22%", "+5,5–6,5 п.п.", "~€1,95–2,05 млн", "Усі двигуни + сильний retention"],
+          ["Як зараз (нічого не робимо)", "15,5%", "—", "~€1,44 млн", "Продовжуємо падати відносно ринку"],
+          ["Обережний", "17,5–18%", "+2–2,5%", "~€1,63–1,67 млн", "Visa-пілот + трохи SMB"],
+          ["Базовий (наш план)", "19–20%", "+3,5–4,5%", "~€1,77–1,86 млн", "Visa + локальні ресторани + маркетинг"],
+          ["Оптимістичний", "21–22%", "+5,5–6,5%", "~€1,95–2,05 млн", "Усе спрацювало + люди лишаються підписниками"],
         ]}
       />
       <Text size="small" tone="tertiary">
-        Gap до 20%: +4,5 п.п. ≈ +€420 тис. Bolt+ GMV на місяць. Не додавати
-        ефекти механічно — Visa, Marketing і SMB можуть перетинатися на тих
-        самих користувачах.
+        Щоб дійти до 20%, треба додати ~€420 тис. Bolt+-обороту на місяць.
+        Важливо: ефекти від Visa, маркетингу і SMB не можна просто скласти —
+        частина людей потрапить у кілька програм одночасно.
       </Text>
 
-      <H2>2. Segment economics — чому mix важливий</H2>
-      <Text tone="secondary">
+      <H2>2. Чому важливо, ХТО дає Plus-замовлення</H2>
+      <Text>
         <Pill tone="success" active>
-          DBX fact
+          Факт з Databricks
         </Pill>{" "}
-        Direct margin proxy = commission + eater fees − courier − demand
-        incentives. Не invoiced CP L2, але коректно для порівняння сегментів ·
-        останні ~8,5 тижнів · delivered Plus orders.
+        «Прибуток на замовлення» тут — спрощений розрахунок: комісія від
+        ресторану + збори з користувача − кур'єр − наші знижки. Це не офіційний
+        фінансовий звіт, але добре показує різницю між типами партнерів.
       </Text>
       <BarChart
         categories={segmentMargin.map((d) => d.segment)}
         series={[
           {
-            name: "Direct margin proxy (€ / Plus order)",
+            name: "Прибуток на Plus-замовлення (€)",
             data: segmentMargin.map((d) => d.margin),
             tone: "info",
           },
@@ -141,485 +142,475 @@ export default function BoltPlusQ4GrowthStrategy() {
       />
       <Table
         headers={[
-          "Сегмент",
-          "Plus orders",
-          "Plus GMV penetration",
-          "Commission rate",
-          "Margin proxy / order",
-          "Plus providers enrolled",
+          "Тип партнера",
+          "Plus-замовлень",
+          "Частка їхнього обороту через Plus",
+          "Комісія від ресторану",
+          "Прибуток / замовлення",
+          "Підключено до Bolt+",
         ]}
         columnAlign={["left", "right", "right", "right", "right", "right"]}
         rowTone={["success", "success", "warning", "danger"]}
         rows={[
-          ["SMB restaurants", "25 759", "13,9%", "29,3%", "€2,54", "2 512"],
-          ["Mid-market", "56 486", "16,3%", "25,8%", "€1,89", "1 839"],
+          ["Малі ресторани (SMB)", "25 759", "13,9%", "29,3%", "€2,54", "2 512"],
+          ["Середні мережі (MM)", "56 486", "16,3%", "25,8%", "€1,89", "1 839"],
           ["McDonald's", "63 476", "15,9%", "15,0%", "€0,07", "120"],
           ["KFC", "12 538", "15,6%", "15,4%", "−€0,26", "71"],
         ]}
       />
       <Grid columns={3} gap={12}>
-        <Stat value="42,1%" label="McD + KFC share of Plus orders" tone="warning" />
-        <Stat value="€2,54" label="SMB margin proxy — у 36× вище за McD" tone="success" />
-        <Stat value="13,4–16,4%" label="Plus order penetration по сегментах" />
+        <Stat value="42,1%" label="McD + KFC = стільки всіх Plus-замовлень" tone="warning" />
+        <Stat value="€2,54" label="Прибуток на SMB-замовлення — у 36× більше за McD" tone="success" />
+        <Stat value="13–16%" label="Частка Plus-замовлень у кожного типу партнера" />
       </Grid>
-      <Callout tone="warning" title="Viacheslav position (Slack, 28.04)">
-        McD+KFC ≈ 44% GMV, але ~85% Bolt+ orders за 6 міс. — structural
-        dependency з поганою UE. Стратегія Q4: не нові преференції для них, а
-        commercial reset + shift mix на SMB/MM, де economics кращі.
+      <Callout tone="warning" title="Що казав Viacheslav у квітні">
+        McD і KFC дають ~44% обороту, але ~85% Bolt+ замовлень — ми сильно
+        залежимо від них, а вони не платять додаткову комісію за Plus. План Q4:
+        не давати їм нових знижок, а перенаправити зусилля на малі ресторани,
+        де економіка краща.
       </Callout>
 
-      <H2>3. Subscriber value — acquisition math</H2>
-      <Text tone="secondary">
+      <H2>3. Скільки коштує один новий підписник</H2>
+      <Text>
         <Pill tone="success" active>
-          DBX fact
+          Факт з Databricks
         </Pill>{" "}
-        Cohort value · fact_user_subscriptions + fact_order_delivery · cohorts
-        бер–лип 2026.
+        Дивились на людей, які підписались у березні–червні 2026, і рахували їхню
+        активність у перші 30 і 60 днів.
       </Text>
       <Table
         headers={[
-          "Cohort",
-          "New subs",
-          "Food active 30d",
-          "Plus orders / sub (30d)",
-          "Plus GMV / sub (30d)",
-          "Retained 60d",
+          "Місяць підписки",
+          "Нових підписників",
+          "Замовили їжу за 30 днів",
+          "Замовлень / людину (30 днів)",
+          "Оборот / людину (30 днів)",
+          "Лишились підписниками через 60 днів",
         ]}
         columnAlign={["left", "right", "right", "right", "right", "right"]}
         rows={[
-          ["Бер 2026", "8 562", "68,7%", "2,67", "€40,69", "24,3%"],
-          ["Кві 2026", "9 351", "66,0%", "2,50", "€38,91", "22,5%"],
-          ["Тра 2026", "7 742", "61,3%", "2,32", "€36,68", "21,4%"],
-          ["Чер 2026", "6 823", "62,2%", "2,62", "€40,51", "11,0%"],
+          ["Березень", "8 562", "68,7%", "2,67", "€40,69", "24,3%"],
+          ["Квітень", "9 351", "66,0%", "2,50", "€38,91", "22,5%"],
+          ["Травень", "7 742", "61,3%", "2,32", "€36,68", "21,4%"],
+          ["Червень", "6 823", "62,2%", "2,62", "€40,51", "11,0%"],
         ]}
       />
       <Grid columns={3} gap={12}>
-        <Stat value="~€40" label="Plus GMV / новий sub · перші 30 днів" />
-        <Stat value="~62–69%" label="Food activation · 30 днів" tone="info" />
-        <Stat value="11–24%" label="Subscription retained · 60 днів" tone="warning" />
+        <Stat value="~€40" label="Середній оборот від нового підписника · 30 днів" />
+        <Stat value="~62–69%" label="Замовляють їжу хоча б раз · 30 днів" tone="info" />
+        <Stat value="11–24%" label="Продовжують підписку · 60 днів" tone="warning" />
       </Grid>
       <Text>
-        Робоча оцінка для Visa pilot: новий sub ≈ €40 GMV у перші 30 днів.
-        2 000 redeemed codes × €40 ≈ €81 тис. (+0,8–0,9 п.п.). 5 000 × €40 ≈
-        €203 тис. (+2,1 п.п.).{" "}
+        Для розрахунку Visa-пілоту беремо ~€40 на людину за перший місяць.
+        2 000 активованих кодів × €40 ≈ €81 тис. (+0,8–0,9% до частки обороту).
+        5 000 кодів ≈ €203 тис. (+2,1%).{" "}
         <Pill tone="warning" active>
-          Scenario
+          Це сценарій, не прогноз
         </Pill>
       </Text>
 
       <Divider />
 
-      <H2>4. Чотири двигуни — stakeholder contract</H2>
+      <H2>4. Хто за що відповідає — чотири напрямки + команда</H2>
       <Table
-        headers={["Двигун", "Owner", "Їхній KPI / інтерес", "Їхній внесок", "Bolt+ KPI", "Credit модель"]}
+        headers={["Напрямок", "Хто веде", "Що їм важливо", "Що вони дають", "Як міряємо успіх Bolt+", "Як їм «зараховуємо» результат"]}
         columnAlign={["left", "left", "left", "left", "left", "left"]}
         rows={[
           [
-            "Visa / банки",
-            "Artem Havriushyn, Oleksandr Holovnenko",
-            "Card usage, new cardholders, brand visibility",
-            "80% subsidy, 5–20k codes, bank media",
-            "New subs, redemption, 30d activation",
-            "Partner-funded subs · не Bolt DI",
+            "Visa / банк",
+            "Artem, Oleksandr",
+            "Більше платежів карткою, нові клієнти банку",
+            "80% оплати підписки, 5–20 тис. кодів, реклама банку",
+            "Скільки кодів активували, скільки замовили їжу",
+            "Партнер платить — не наші знижки (DI)",
           ],
           [
-            "SMB / MM",
-            "AM / KAM (local)",
-            "Incremental orders, visibility, ROAS",
-            "Exclusive offers, Ads, co-funded discounts",
-            "Plus GMV penetration SMB/MM, margin proxy",
-            "Partner GMV + Ads revenue + co-funding",
+            "Малі / середні ресторани",
+            "AM / KAM",
+            "Більше замовлень, видимість у застосунку",
+            "Ексклюзивні пропозиції, реклама, спільні знижки",
+            "Більше Plus-замовлень у SMB/MM, вищий прибуток",
+            "Їхній GMV + рекламний дохід + їхня частка знижок",
           ],
           [
             "McD / KFC",
             "Enterprise AM + Viacheslav",
-            "Brand traffic without extra cost",
-            "+1–1,5% Plus commission OR Ads/co-fund",
-            "Stop UE bleed · reinvest €8,5k/mo",
-            "Partner investment → acquisition pool",
+            "Трафік без додаткових витрат",
+            "+1–1,5% комісії за Plus АБО реклама/co-funding",
+            "Зупинити «кровотечу» в економіці, реінвестувати €8,5k/міс",
+            "Їхні гроші → на залучення нових підписників",
           ],
           [
-            "Marketing / Growth",
+            "Маркетинг",
             "UA Marketing + Growth",
-            "Reach, CAC, campaign ROI",
-            "CRM, modals, bank cross-promo, comms",
-            "Trials, GMV share, orders/user",
-            "Incremental subs at target CAC",
+            "Охоплення, вартість залучення, ROI кампаній",
+            "CRM, банери, реклама з банком, комунікації",
+            "Пробні підписки, частка обороту, замовлень на людину",
+            "Нові підписники за прийнятною ціною",
           ],
           [
-            "Product",
-            "Bolt+ Product + Vengatesh",
-            "Campaign compatibility, UX",
-            "Deeplink/webview, campaign priority fix",
-            "Redemption rate, test validity",
-            "Unblock Visa + cashback tests",
+            "Продукт",
+            "Bolt+ Product, Vengatesh",
+            "Щоб все працювало технічно",
+            "Посилання на підписку, виправити конфлікт кампаній",
+            "Скільки кодів реально активують",
+            "Розблокувати Visa і cashback-тести",
           ],
           [
-            "Program lead",
-            "Yaroslav Bokii",
-            "End-to-end delivery, analytics",
-            "Scorecard, experiment design, alignment",
-            "GMV share + guardrails",
-            "North Star owner",
+            "Координація",
+            "Yaroslav",
+            "Щоб усе зійшлось в один план",
+            "Звітність, дизайн тестів, alignment",
+            "Частка обороту + межі по витратах",
+            "Власник головної метрики",
           ],
         ]}
       />
-      <Callout tone="info" title="Sponsor">
-        Viacheslav Levchenko — executive sponsor, commercial reset authority,
-        final call on McD/KFC terms and DI guardrails.
+      <Callout tone="info" title="Хто приймає рішення">
+        Viacheslav Levchenko — головний sponsor. Він вирішує переговори з
+        McD/KFC і скільки ми можемо витрачати на знижки (DI) у Q4.
       </Callout>
 
-      <H2>5. Q4 roadmap</H2>
+      <H2>5. План по місяцях — Q4</H2>
       <Table
-        headers={["Фаза", "Коли", "Deliverables", "Exit criteria"]}
+        headers={["Етап", "Коли", "Що робимо", "Коли вважаємо успіхом"]}
         columnAlign={["left", "left", "left", "left"]}
         rows={[
           [
-            "Foundation",
+            "Підготовка",
             "До кін. серпня",
-            "North Star + guardrails, stakeholder contract, campaign calendar, no-comms-before-QA rule",
-            "Signed KPI sheet · calendar v1 · Product blockers list",
+            "Зафіксувати метрики, домовитись хто за що, календар кампаній. Не запускати рекламу до технічної перевірки",
+            "Підписані KPI, календар, список блокерів від Product",
           ],
           [
-            "Visa pilot",
+            "Visa-пілот",
             "Вересень",
-            "5k codes · internal QA → 10% soft → scale",
-            "Redemption ≥25% · 30d activation ≥55% · CP within guardrail",
+            "5 тис. кодів: спочатку внутрішній тест → 10% аудиторії → масштаб",
+            "≥25% кодів активували · ≥55% замовили їжу за 30 днів · економіка в межах",
           ],
           [
-            "SMB/MM activation",
+            "Локальні ресторани",
             "Вер–жов",
-            "Local Favourites · top pool · Kyiv + holdout cities",
-            "SMB Plus penetration +2 pp vs control · margin proxy ↑",
+            "«Bolt+ Local Favourites» — топ ресторани з ексклюзивами. Київ + контрольне місто",
+            "У SMB більше Plus-замовлень ніж у контролі · прибуток не падає",
           ],
           [
-            "McD/KFC reset",
+            "Переговори McD/KFC",
             "Вер–жов",
-            "Economics deck · negotiation · Cyprus precedent",
-            "+1–1,5% commission OR equivalent Ads · or no extra subsidy",
+            "Показати їм цифри, попросити +1–1,5% комісії (як McD на Кіпрі)",
+            "Підписали умови АБО не даємо нових знижок",
           ],
           [
-            "Marketing amp",
+            "Маркетинг",
             "Жов–лист",
-            "One story: bank sub + local exclusives",
-            "Trial WoW uplift · CAC within target",
+            "Одна проста історія: банк дає підписку, Bolt+ відкриває локальні пропозиції",
+            "Більше пробних підписок тиждень до тижня · вартість залучення в нормі",
           ],
           [
-            "Scale / review",
+            "Підсумок",
             "Грудень",
-            "Weekly scorecard · stop/scale decisions",
-            "19–20% base OR documented learnings",
+            "Щотижневий звіт, рішення що масштабувати, що зупинити",
+            "19–20% частки АБО чіткі висновки чому ні",
           ],
         ]}
       />
 
-      <H2>6. Experiment roadmap — пілоти з holdouts</H2>
+      <H2>6. Як саме тестуємо — правила для кожного напрямку</H2>
 
-      <H3>6.1 Visa / bank acquisition</H3>
-      <Text tone="secondary">
+      <H3>6.1 Visa / банк — нові підписники за рахунок партнера</H3>
+      <Text>
         <Pill tone="success" active>
-          Slack fact
+          Факт зі Slack
         </Pill>{" "}
-        80% subsidy negotiated · 5k start codes · scale to 20k · UX/deeplink
-        blocker · Visa campaigns can override Plus cashback (no MOV).
+        Домовились про 80% оплати підписки банком. Старт — 5 тис. кодів, можна
+        до 20 тис. Блокер: технічно не все працює (deeplink). Кампанії Visa
+        перекривають cashback для Plus, бо у Visa немає MOV.
       </Text>
       <Table
-        headers={["Параметр", "Design", "KPI", "Stop", "Scale"]}
+        headers={["Що", "Як робимо", "На що дивимось", "Коли зупиняємо", "Коли масштабуємо"]}
         columnAlign={["left", "left", "left", "left", "left"]}
         rows={[
           [
-            "Audience",
-            "New + lapsed subs only; exclude active payers",
-            "Redemption rate",
-            "<15% after 2 weeks",
-            "≥30% redemption → add 5k codes",
+            "Кому даємо",
+            "Тільки новим і колишнім підписникам; тим хто вже платить — ні",
+            "Скільки % кодів активували",
+            "Менше 15% за 2 тижні",
+            "≥30% активували → додаємо ще 5 тис. кодів",
           ],
           [
-            "Holdout",
-            "10–20% random · same bank audience",
-            "Incremental subs vs holdout",
-            "No lift vs holdout at 4 weeks",
-            "Lift ≥15% incremental subs",
+            "Контрольна група",
+            "10–20% людей не отримують код — для порівняння",
+            "Чи більше підписників ніж у контролі",
+            "Через 4 тижні різниці немає",
+            "На 15%+ більше підписників → масштаб",
           ],
           [
-            "Rollout",
-            "50–100 internal → 10% soft → full",
-            "30d food activation, GMV/sub",
-            "Activation <45%",
-            "Activation ≥55% + CP OK → marketing",
+            "Запуск",
+            "50–100 співробітників → 10% аудиторії → повний",
+            "Скільки % замовили їжу за 30 днів",
+            "Менше 45% замовили",
+            "≥55% замовили + економіка ок → реклама",
           ],
           [
-            "Product",
-            "Fix campaign priority vs Visa no-MOV",
-            "Cashback + Visa coexistence",
-            "Override persists",
-            "QA sign-off before external comms",
+            "Продукт",
+            "Виправити конфлікт Visa vs cashback",
+            "Обидві кампанії працюють разом",
+            "Конфлікт лишився",
+            "QA пройдено → зовнішня реклама",
           ],
         ]}
       />
       <Grid columns={3} gap={12}>
-        <Stat value="5k codes" label="Pilot size" />
-        <Stat value="40%" label="Redemption assumption → 2k subs" tone="info" />
-        <Stat value="+0,8–0,9 п.п." label="GMV share scenario (30d)" tone="success" />
+        <Stat value="5 тис. кодів" label="Розмір пілоту" />
+        <Stat value="40%" label="Припускаємо активацію → ~2 тис. підписників" tone="info" />
+        <Stat value="+0,8–0,9%" label="До частки обороту (сценарій, 30 днів)" tone="success" />
       </Grid>
       <Grid columns={3} gap={12}>
-        <Stat value="20k codes" label="Scale scenario" />
-        <Stat value="25%" label="Redemption assumption → 5k subs" tone="info" />
-        <Stat value="+2,1 п.п." label="GMV share scenario (monthly)" tone="success" />
+        <Stat value="20 тис. кодів" label="Масштаб" />
+        <Stat value="25%" label="Припускаємо активацію → ~5 тис. підписників" tone="info" />
+        <Stat value="+2,1%" label="До частки обороту (сценарій, місяць)" tone="success" />
       </Grid>
 
-      <H3>6.2 SMB / MM — Bolt+ Local Favourites</H3>
+      <H3>6.2 Малі ресторани — «Bolt+ Local Favourites»</H3>
       <Table
-        headers={["Параметр", "Design", "KPI", "Stop", "Scale"]}
+        headers={["Що", "Як робимо", "На що дивимось", "Коли зупиняємо", "Коли масштабуємо"]}
         columnAlign={["left", "left", "left", "left", "left"]}
         rows={[
           [
-            "Partner pool",
-            "Top enrolled SMB/MM: commission ≥25%, rating, availability, basket 250–400 UAH",
-            "Pool size ≥150 providers",
-            "<80 qualified partners",
-            "Expand to 300+ in 2 cities",
+            "Кого обираємо",
+            "Топ підключених SMB/MM: комісія ≥25%, хороший рейтинг, кошики 250–400 грн",
+            "Скільки ресторанів у пулі (≥150)",
+            "Менше 80 підходящих",
+            "300+ у 2 містах",
           ],
           [
-            "Offer",
-            "Exclusive menu/item + partner-funded 10–15% OR Ads bundle",
-            "Plus orders / partner, ROAS",
-            "ROAS <1 for 4 weeks",
-            "ROAS ≥1.5 → national playbook",
+            "Пропозиція",
+            "Ексклюзивна страва/меню + знижка 10–15% від ресторану АБО рекламний пакет",
+            "Plus-замовлення на ресторан, окупність (ROAS)",
+            "ROAS &lt; 1 протягом 4 тижнів",
+            "ROAS ≥ 1,5 → розкат по країні",
           ],
           [
-            "Holdout",
-            "Matched providers in control city; user holdout 10%",
-            "Incremental Plus GMV vs control",
-            "No penetration lift",
-            "+2 pp penetration → +1 city/week",
+            "Контроль",
+            "Схожі ресторани в іншому місті без пропозиції; 10% юзерів без доступу",
+            "Чи більше Plus-обороту ніж у контролі",
+            "Різниці немає",
+            "+2% penetration → +1 місто на тиждень",
           ],
           [
-            "Visibility",
-            "Bolt+ carousel + Sponsored Listings slot",
-            "Click-to-order, mix shift",
-            "Mix unchanged 6 weeks",
-            "SMB share of Plus orders +3 pp",
+            "Видимість",
+            "Окремий блок у Bolt+ + рекламний слот",
+            "Кліки → замовлення, зміна mix",
+            "Mix не змінився 6 тижнів",
+            "Частка SMB у Plus-замовленнях +3%",
           ],
         ]}
       />
       <Text>
-        Scenario: SMB/MM Plus penetration 13–16% → 18% ≈ +€27k/week (+1,2 п.п.
-        total share). To 20% ≈ +2,2 п.п.{" "}
+        Якщо частка Plus-замовлень у SMB/MM підніметься з 13–16% до 18% — це
+        ~+€27 тис./тиждень (+1,2% до загальної частки). До 20% — ~+2,2%.{" "}
         <Pill tone="warning" active>
-          Scenario — needs holdout
+          Сценарій — треба підтвердити контрольною групою
         </Pill>
       </Text>
 
-      <H3>6.3 McDonald's / KFC — commercial reset</H3>
+      <H3>6.3 McDonald's / KFC — нові умови, не нові знижки</H3>
       <Table
-        headers={["Параметр", "Design", "KPI", "Stop", "Scale"]}
+        headers={["Що", "Як робимо", "На що дивимось", "Коли зупиняємо", "Коли масштабуємо"]}
         columnAlign={["left", "left", "left", "left", "left"]}
         rows={[
           [
-            "Ask",
-            "+1–1,5% Bolt+ commission OR €8,5k/mo Ads equivalent",
-            "Signed term or walk-away",
-            "No movement by Oct 31",
-            "Reinvest revenue into Visa/SMB pool",
+            "Запит",
+            "+1–1,5% комісії за Plus-замовлення АБО €8,5k/міс на рекламу",
+            "Підписали чи ні",
+            "До 31 жовтня без руху",
+            "Гроші → на Visa/SMB",
           ],
           [
-            "Precedent",
-            "McD Cyprus: 0% → 1,5% from Sep",
-            "Partner acceptance rate",
+            "Аргумент",
+            "McD на Кіпрі з вересня: 0% → 1,5%",
+            "Чи погодились",
             "—",
-            "Use in UA negotiation deck",
+            "Використати в презентації для UA",
           ],
           [
-            "Fallback",
-            "Keep base Plus presence · no new exclusive subsidy",
-            "McD/KFC Plus share stable, no DI increase",
-            "DI creep for McD/KFC",
-            "Redirect marketing inventory to co-funding partners",
-          ],
-          [
-            "Holdout",
-            "No holdout — commercial negotiation",
-            "Margin proxy McD/KFC",
-            "Give extra subsidy without return",
-            "Document walk-away terms",
+            "Якщо відмовляться",
+            "Plus лишається, але без нових ексклюзивних знижок",
+            "Частка McD/KFC стабільна, наші DI не ростуть",
+            "DI для McD/KFC ростуть без їхнього внеску",
+            "Рекламу → на партнерів, які co-fund",
           ],
         ]}
       />
 
-      <H3>6.4 Marketing amplification</H3>
+      <H3>6.4 Маркетинг — тільки коли продукт готовий</H3>
       <Table
-        headers={["Параметр", "Design", "KPI", "Stop", "Scale"]}
+        headers={["Що", "Як робимо", "На що дивимось", "Коли зупиняємо", "Коли масштабуємо"]}
         columnAlign={["left", "left", "left", "left", "left"]}
         rows={[
           [
-            "Timing",
-            "Only after Visa QA + SMB offers live",
-            "Trial WoW vs 4w pre",
-            "Launch before Product QA",
-            "WoW trials +20% sustained 3w",
+            "Коли стартуємо",
+            "Тільки після Visa QA + пропозиції від ресторанів",
+            "Пробні підписки тиждень до тижня",
+            "Запустили рекламу до перевірки Product",
+            "+20% пробних підписок 3 тижні поспіль",
           ],
           [
-            "Segments",
-            "High-frequency non-subs, lapsed, Plus-ready, bank cohort",
-            "CAC per incremental sub",
-            "CAC > €12 per incremental sub",
-            "Double spend on best segment",
+            "Кому показуємо",
+            "Часто замовляють без підписки, колишні підписники, банківська аудиторія",
+            "Вартість одного нового підписника",
+            "Дорожче €12 за підписника",
+            "Подвоїти бюджет на найкращий сегмент",
           ],
           [
-            "Channels",
-            "Bank media, CRM, in-app, Rides cross-promo",
-            "Redemption → order funnel",
-            "CTR < benchmark −30%",
-            "Shift budget to winning channel",
+            "Канали",
+            "Реклама банку, CRM, застосунок, cross-promo з Rides",
+            "Шлях: побачив → активував → замовив",
+            "Кліки на 30% нижче норми",
+            "Бюджет → на найкращий канал",
           ],
           [
-            "Cashback test",
-            "Fix Visa override first (Slack 19.08)",
-            "Incremental Plus GMV vs control",
-            "No lift at 4 weeks",
-            "Scale if ROI > 1.2",
+            "Cashback-тест",
+            "Спочатку виправити конфлікт з Visa (Slack 19.08)",
+            "Чи більше Plus-обороту ніж у контролі",
+            "Ефекту немає через 4 тижні",
+            "ROI &gt; 1,2 → масштаб",
           ],
         ]}
       />
 
-      <H2>7. Target bridge — як збираємо +4,5 п.п.</H2>
-      <Text tone="secondary">
+      <H2>7. Як збираємо +4,5% до цілі 20%</H2>
+      <Text>
         <Pill tone="warning" active>
-          Scenario model
+          Сценарій — не просто додавати числа
         </Pill>{" "}
-        Не сумувати сліпо — overlap discount ~20–30%.
+        Люди з Visa, маркетингу і SMB перетинаються — реальний ефект на ~20–30%
+        менший за суму.
       </Text>
       <Table
-        headers={["Двигун", "Conservative", "Base", "Upside", "Overlap note"]}
+        headers={["Напрямок", "Обережно", "Базовий план", "Оптимістично", "Примітка"]}
         columnAlign={["left", "right", "right", "right", "left"]}
         rows={[
-          ["Visa / bank", "+0,5–0,9 п.п.", "+1,0–2,1 п.п.", "+2,1 п.п.", "Mostly new subs"],
-          ["SMB / MM activation", "+0,5–1,2 п.п.", "+1,2–2,2 п.п.", "+2,5 п.п.", "Mix + frequency"],
-          ["McD/KFC reinvestment", "+0,2 п.п.", "+0,3–0,5 п.п.", "+0,5 п.п.", "Only if commission signed"],
-          ["Marketing + retention", "+0,5–1,0 п.п.", "+1,0–1,5 п.п.", "+2,0 п.п.", "Overlaps Visa/SMB"],
-          ["MOV revert (optional)", "—", "+0,5–1,5 п.п.", "+2,0 п.п.", "Separate case · not in Q4 base"],
+          ["Visa / банк", "+0,5–0,9%", "+1,0–2,1%", "+2,1%", "Переважно нові підписники"],
+          ["Локальні ресторани", "+0,5–1,2%", "+1,2–2,2%", "+2,5%", "Mix + частота замовлень"],
+          ["McD/KFC → реінвест", "+0,2%", "+0,3–0,5%", "+0,5%", "Тільки якщо підпишуть комісію"],
+          ["Маркетинг + утримання", "+0,5–1,0%", "+1,0–1,5%", "+2,0%", "Перетинається з Visa/SMB"],
+          ["MOV (окремий кейс)", "—", "+0,5–1,5%", "+2,0%", "Не в базовому плані Q4"],
         ]}
       />
 
-      <H2>8. Guardrails і weekly scorecard</H2>
+      <H2>8. Межі — чого не можна перевищити</H2>
       <Grid columns={4} gap={12}>
-        <Stat value="CP L2" label="North Star guardrail — не погіршувати vs baseline" tone="warning" />
-        <Stat value="DI / GMV" label="Ceiling agreed with finance · currently ~7,5%" tone="warning" />
-        <Stat value="60d retention" label="Floor ~20% on new cohorts" />
-        <Stat value="Partner-funded %" label="Target ↑ each month" tone="success" />
+        <Stat value="CP L2" label="Загальна прибутковість — не гірше ніж зараз" tone="warning" />
+        <Stat value="DI / GMV" label="Наші знижки — не більше домовленої межі (~7,5%)" tone="warning" />
+        <Stat value="60 днів" label="Мінімум ~20% нових підписників лишаються" />
+        <Stat value="Co-funding" label="Кожен місяць більше грошей від партнерів" tone="success" />
       </Grid>
       <Table
-        headers={["Metric", "Frequency", "Owner", "Red flag"]}
+        headers={["Що міряємо", "Як часто", "Хто відповідає", "Червоний прапорець"]}
         rows={[
-          ["Bolt+ GMV share", "Weekly", "Yaroslav", "↓ 2 consecutive weeks post-launch"],
-          ["New trials / first subs", "Weekly", "Marketing", "<1,2k/week after amp"],
-          ["Visa redemption + activation", "Weekly", "Artem/Oleksandr", "Redemption <20%"],
-          ["SMB Plus penetration", "Weekly", "AM/KAM", "Flat vs control 4 weeks"],
-          ["Margin proxy by segment", "Bi-weekly", "Yaroslav", "SMB margin ↓ >10%"],
-          ["McD/KFC DI share", "Monthly", "Viacheslav", "DI ↑ without partner return"],
-          ["Campaign U/C", "Per test", "Growth", "ROI <1 at scale gate"],
+          ["Частка Bolt+ обороту", "Щотижня", "Yaroslav", "2 тижні поспіль падає після запуску"],
+          ["Нові пробні підписки", "Щотижня", "Маркетинг", "Менше 1,2 тис./тиждень після реклами"],
+          ["Visa: активація кодів", "Щотижня", "Artem/Oleksandr", "Менше 20% активували"],
+          ["Plus-замовлення у SMB", "Щотижня", "AM/KAM", "Як у контролі 4 тижні"],
+          ["Прибуток по сегментах", "Раз на 2 тижні", "Yaroslav", "SMB-прибуток впав &gt;10%"],
+          ["DI для McD/KFC", "Щомісяця", "Viacheslav", "DI ростуть, партнери нічого не дають"],
+          ["ROI кампаній", "На кожен тест", "Growth", "ROI &lt; 1 при масштабуванні"],
         ]}
       />
 
-      <H2>9. Що fact / scenario / hypothesis</H2>
+      <H2>9. Що точно знаємо, що порахували, що треба перевірити</H2>
       <Table
         headers={["Тип", "Приклади"]}
         rowTone={["success", "warning", "neutral"]}
         rows={[
           [
-            "DBX / Slack fact",
-            "GMV share 15,5%; segment margins; 78% enrollment; Visa 80% subsidy; McD Cyprus 1,5%; cashback/Visa override issue",
+            "Факт (Databricks / Slack)",
+            "Частка 15,5%; прибуток по сегментах; 78% ресторанів підключено; Visa 80% оплати; McD Кіпр 1,5%; конфлікт Visa vs cashback",
           ],
           [
-            "Scenario (розрахунок)",
-            "Visa 2k/5k subs → +0,8–2,1 п.п.; SMB penetration 18% → +1,2 п.п.; McD+KFC +1,5% → €8,5k/mo reinvest",
+            "Сценарій (наш розрахунок)",
+            "Visa 2–5 тис. підписників → +0,8–2,1%; SMB до 18% → +1,2%; McD+KFC +1,5% → €8,5k/міс",
           ],
           [
-            "Hypothesis (треба тест)",
-            "Local Favourites підніме SMB share of Plus orders; bank deeplink fix → redemption ≥30%; commercial reset не втратить McD traffic",
+            "Гіпотеза (треба тест)",
+            "Local Favourites підніме частку SMB; deeplink виправлять → ≥30% активації; McD не втратить трафік після переговорів",
           ],
         ]}
       />
 
       <Divider />
 
-      <H2>10. Повідомлення для Viacheslav — alignment draft</H2>
+      <H2>10. Текст для Viacheslav</H2>
       <Card>
-        <CardHeader>Paste-ready · UA</CardHeader>
+        <CardHeader>Можна скопіювати · UA</CardHeader>
         <CardBody>
           <Stack gap={8}>
             <Text>
-              Viacheslav, підготував Q4-стратегію росту Bolt+ GMV share окремо
-              від MOV-кейсу. Baseline з DBX: ~15,5% share (було 19,8% pre-MOV),
-              ~€9,3M total GMV, ~1,4–1,6k new trials/week. Target Q4: 19–20%
-              (+€420k Bolt+ GMV/mo).
+              Viacheslav, підготував Q4-план росту Bolt+ окремо від MOV-кейсу.
+              Зараз підписники дають 15,5% обороту (було 19,8% до MOV), ~€9,3M
+              всього обороту, ~1,4–1,6k нових пробних підписок на тиждень. Ціль
+              Q4: 19–20% (+€420k Bolt+ GMV на місяць).
             </Text>
             <Text>
-              Ключовий insight з твоєго квітневого месседжу підтверджується
-              даними: McD+KFC = 42% Plus orders, margin proxy €0,07 / −€0,26 vs
-              SMB €2,54 / MM €1,89. Тому план — не одна кампанія, а 4 двигуни:
-              (1) Visa/bank acquisition — 80% funded, 5k codes, pilot вересень;
-              (2) SMB/MM Local Favourites — shift mix на прибутковий selection;
-              (3) McD/KFC commercial reset — +1–1,5% commission або walk-away
-              без нових субсидій; (4) Marketing — тільки після Product QA.
+              Твоя думка з квітня підтверджується даними: McD+KFC = 42%
+              Plus-замовлень, але на кожному ми заробляємо €0,07 / −€0,26, а на
+              SMB €2,54 / MM €1,89. Тому не одна кампанія, а 4 напрямки: (1)
+              Visa/банк — 80% оплати, 5k кодів, пілот у вересні; (2) Local
+              Favourites — shift на прибуткові ресторани; (3) McD/KFC — +1–1,5%
+              комісії або без нових знижок; (4) Маркетинг — тільки після
+              Product QA.
             </Text>
             <Text>
-              Кожен пілот має holdout і stop/scale rules. Scenarios (не
-              forecast): Visa pilot +0,8–0,9 п.п., scale to +2,1 п.п.; SMB
-              activation +1,2–2,2 п.п.; McD/KFC reinvest ~€8,5k/mo if commission
-              signed. Conservative Q4: 17,5–18%; base: 19–20%; upside: 21–22%.
-              MOV лишається окремим CVP-важелем — не в base plan.
+              Кожен тест з контрольною групою і правилами stop/scale. Сценарії
+              (не прогноз): Visa +0,8–2,1%, SMB +1,2–2,2%, McD/KFC реінвест
+              ~€8,5k/міс. Oбережний Q4: 17,5–18%; базовий: 19–20%; upside:
+              21–22%. MOV — окремий важіль, не в базовому плані.
             </Text>
             <Text>
-              Потрібно від тебе: (1) sponsor sign-off на 4-engine model; (2)
-              mandate для McD/KFC commercial conversation; (3) DI guardrail
-              ceiling для Q4 tests. Можемо пройтись по canvas на 30 хв this week.
+              Потрібно від тебе: (1) ok на 4-напрямкову модель; (2) mandate на
+              переговори з McD/KFC; (3) стелю DI для Q4-тестів. Можемо пройтись
+              по канві на 30 хв this week.
             </Text>
           </Stack>
         </CardBody>
       </Card>
 
       <Card>
-        <CardHeader>Paste-ready · EN (for broader alignment)</CardHeader>
+        <CardHeader>Можна скопіювати · EN</CardHeader>
         <CardBody>
           <Stack gap={8}>
             <Text>
-              Sharing the Q4 Bolt+ growth strategy for Ukraine. North Star: lift
-              Plus GMV share from ~15.5% to 19–20% by year-end while improving
-              partner mix and economics — separate from the MOV case.
+              Sharing the Q4 Bolt+ growth plan for Ukraine — separate from the
+              MOV case. Goal: lift Plus share of food GMV from ~15.5% to 19–20%
+              by year-end while improving partner mix and economics.
             </Text>
             <Text>
-              DBX baseline: ~21k Plus orders/week, ~9.5k active users, ~1.4–1.6k
-              new trials/week. Segment economics confirm your April point: McD+KFC
-              drive ~42% of Plus orders at €0.07 / −€0.26 margin proxy vs SMB
-              €2.54 and Mid-market €1.89. Merchant enrollment (~78%) is no
-              longer the bottleneck — activation and mix are.
+              DBX baseline: ~21k Plus orders/week, ~9.5k active subscribers,
+              ~1.4–1.6k new trials/week. Your April point holds: McD+KFC drive
+              ~42% of Plus orders at near-zero margin vs SMB €2.54 and
+              Mid-market €1.89. ~78% merchant enrollment is no longer the
+              bottleneck — acquisition, activation and mix are.
             </Text>
             <Text>
-              Four engines: (1) Visa/bank — 80% funded acquisition, 5k-code
-              pilot in September with holdout; (2) SMB/MM Local Favourites —
-              partner-funded offers + visibility; (3) McD/KFC commercial reset
-              — +1–1.5% Plus commission or no extra subsidy; (4) Marketing
-              amplification only after Product QA (Visa deeplink, campaign
-              priority fix).
+              Four workstreams: (1) Visa/bank — 80% funded, 5k-code pilot in
+              September with control group; (2) Local Favourites — partner-funded
+              offers at SMB/MM; (3) McD/KFC commercial reset — +1–1.5% commission
+              or no extra subsidy; (4) Marketing only after Product QA.
             </Text>
             <Text>
-              Each pilot has pre-agreed KPIs and stop/scale criteria. Scenario
-              bridge to 20%: Visa +0.8–2.1 pp, SMB +1.2–2.2 pp, reinvestment from
-              McD/KFC terms + marketing/retention — with overlap discount, not
-              mechanical sum. Weekly scorecard on GMV share, trials, redemption,
-              segment margin proxy, DI guardrails.
+              Each pilot has control group and stop/scale rules. Scenario bridge
+              to 20% — not a forecast. Weekly scorecard on GMV share, trials,
+              code redemption, segment economics, DI guardrails.
             </Text>
           </Stack>
         </CardBody>
       </Card>
 
       <Text size="small" tone="tertiary">
-        Підготовлено: Yaroslav Bokii · DBX: fact_delivery_country_weekly,
-        fact_order_delivery, fact_user_subscriptions, dim_provider_v2 · Slack:
-        Viacheslav 28.04, Tayyiba cashback 06.08, Visa thread 19.08 · MOV canvas
-        не змінювався.
+        Підготовлено: Yaroslav Bokii · Дані: Databricks (червень–серпень 2026) ·
+        Slack: Viacheslav 28.04, Tayyiba cashback 06.08, Visa 19.08 · MOV-канва
+        не змінювалась.
       </Text>
     </Stack>
   );
