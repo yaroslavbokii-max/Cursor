@@ -1,17 +1,26 @@
-# Bolt+ canvases
+# Canvases
 
-## Bolt+ Q4 growth strategy
+Файли `.canvas.tsx` — інтерактивні канви Cursor.
 
-**Відкрити в Cursor:** [`bolt-plus-q4-growth-strategy.canvas.tsx`](bolt-plus-q4-growth-strategy.canvas.tsx)
+## Як відкрити
 
-Або повний шлях на desktop:
+Скопіюй канву у свою локальну папку канв:
 
-`~/.cursor/projects/Users-yaroslav-Desktop-cursor/canvases/bolt-plus-q4-growth-strategy.canvas.tsx`
+```bash
+cp canvases/bolt-plus-q4-growth-strategy.canvas.tsx \
+  ~/.cursor/projects/Users-yaroslav-Desktop-cursor/canvases/
+```
 
-## Поділитись з командою (browser link)
+Далі відкрий файл у Cursor — канва відрендериться.
+
+## Як поділитись посиланням
 
 1. Відкрий канву в Cursor.
-2. Натисни **Publish** у toolbar канви.
+2. **Publish** у toolbar канви.
 3. Скопіюй `shareUrl` — колеги відкриють read-only версію в браузері.
 
-Shared canvases: [cursor.com/dashboard → Shared Canvases](https://cursor.com/dashboard/settings#shared-canvases)
+## Список
+
+| Канва | Про що |
+|---|---|
+| `bolt-plus-q4-growth-strategy.canvas.tsx` | Bolt+ Q4: план росту частки обороту в Україні |
