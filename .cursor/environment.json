@@ -1,0 +1,5 @@
+{
+  "name": "Bolt Food Cursor Monorepo",
+  "install": "bash .cursor/scripts/cloud-agent-install.sh",
+  "start": "bash .cursor/scripts/cloud-agent-start.sh"
+}

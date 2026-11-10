@@ -30,9 +30,11 @@ Everything else (`scripts/` ETL, `docs/` + root `*.html` dashboards, `coffeego-p
 
 ### Secrets / how they are loaded (non-obvious)
 
-- All Python tools read `DATABRICKS_TOKEN` from the environment; locally they fall back to
-  **`databricks-dbx/.env`** (copy from `databricks-dbx/.env.example`). The Databricks host and
-  HTTP path are hardcoded in `databricks-dbx/dbx.py` and `sticker-bot/config.py`.
+- **Databricks in Cloud Agents:** use the **Databricks-sql** MCP in Cursor (team authenticator).
+  Do not rely on a personal access token in this environment.
+- **`dbx.py` / Streamlit / sticker-bot** still read `DATABRICKS_TOKEN` when present (local `.env`,
+  GitHub Actions, or Streamlit secrets). The host and HTTP path are hardcoded in `dbx.py` and
+  `sticker-bot/config.py`.
 - `ulc-region-dashboard/app.py` and `scripts/*` **`sys.path`-import `dbx.py` from
   `databricks-dbx/`**, so the sibling folder layout must be preserved (true monorepo).
 - Streamlit login: set `DASHBOARD_PASSWORD` env var (or `ulc-region-dashboard/.streamlit/secrets.toml`).
